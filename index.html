@@ -2872,24 +2872,6 @@
               return false;
             };
 
-            /** เปิดรูปในแท็บใหม่ (iOS Safari: แล้วให้ user กดแชร์/บันทึกรูป) */
-            const openBlobInNewTab = (blob) => {
-              if (!blob) return false;
-              try {
-                const url = URL.createObjectURL(blob);
-                const win = window.open(url, '_blank');
-                if (!win) {
-                  // popup ถูกบล็อก — นำทางในแท็บเดียวกันไม่ดี ใช้ preview แทน
-                  URL.revokeObjectURL(url);
-                  return false;
-                }
-                setTimeout(() => URL.revokeObjectURL(url), 60000);
-                return true;
-              } catch (_) {
-                return false;
-              }
-            };
-
             const copyText = async (text) => {
               // 1) Clipboard API (ต้อง secure context)
               try {
@@ -2917,37 +2899,62 @@
             };
 
             /**
-             * แชร์ไฟล์รูป — ลอง share จริงเสมอ
-             * (canShare บน Android บางรุ่นคืน false ทั้งที่แชร์ได้ · ชื่อไฟล์ไทยก็เคยพัง)
-             * คืน: 'shared' | 'abort' | 'fail'
+             * แชร์ไฟล์รูปโดยเรียก native Share Sheet ไม่เกินหนึ่งครั้งต่อการแตะ
+             * คืน: 'shared' | 'abort' | 'unsupported' | 'fail'
              */
             const shareFiles = async (blob, text) => {
-              if (!blob || typeof navigator.share !== 'function') return 'fail';
+              if (!blob || typeof navigator.share !== 'function') return 'unsupported';
               const file = makeCardFile(blob);
-              const attempts = [
+              const candidates = [
                 { files: [file], title: 'สรุปแผนชีวิตของฉัน', text: text || '' },
                 { files: [file], title: 'สรุปแผนชีวิตของฉัน' },
                 { files: [file] }
               ];
-              for (const payload of attempts) {
-                try {
-                  await navigator.share(payload);
-                  return 'shared';
-                } catch (e) {
-                  if (e && e.name === 'AbortError') return 'abort';
-                  // ลอง payload ถัดไป
-                }
-              }
-              return 'fail';
-            };
 
-            const shareTextOnly = async (text) => {
-              if (typeof navigator.share !== 'function') return 'fail';
+              let payload = candidates[0];
+              if (typeof navigator.canShare === 'function') {
+                let checked = false;
+                let supported = null;
+                for (const candidate of candidates) {
+                  try {
+                    const ok = navigator.canShare(candidate);
+                    checked = true;
+                    if (ok) {
+                      supported = candidate;
+                      break;
+                    }
+                  } catch (_) {}
+                }
+                if (checked && !supported) return 'unsupported';
+                if (supported) payload = supported;
+              }
+
               try {
-                await navigator.share({ title: 'สรุปแผนชีวิตของฉัน', text });
+                await navigator.share(payload);
                 return 'shared';
               } catch (e) {
                 if (e && e.name === 'AbortError') return 'abort';
+                // Share Sheet ถูกเรียกไปแล้ว ห้าม retry ซ้ำในการแตะครั้งเดียว
+                return 'fail';
+              }
+            };
+
+            const shareTextOnly = async (text) => {
+              if (typeof navigator.share !== 'function') return 'unsupported';
+              const payload = { title: 'สรุปแผนชีวิตของฉัน', text };
+              if (typeof navigator.canShare === 'function') {
+                try {
+                  if (!navigator.canShare(payload)) return 'unsupported';
+                } catch (_) {}
+              }
+              try {
+                await navigator.share(payload);
+                return 'shared';
+              } catch (e) {
+                if (e && e.name === 'AbortError') return 'abort';
+                if (e && (e.name === 'NotSupportedError' || e.name === 'TypeError')) {
+                  return 'unsupported';
+                }
                 return 'fail';
               }
             };
@@ -2981,19 +2988,18 @@
                     }
                   }
 
-                  // ดาวน์โหลดตรง (Android Chrome / desktop ใช้ได้ดี)
-                  const dlOk = downloadBlob(blob, CARD_FILE);
-                  if (dlOk && !isIOS()) {
-                    setStatus('บันทึกรูปแล้ว · ดูในโฟลเดอร์ดาวน์โหลดได้เลย');
+                  // Safari/WebView ที่แชร์ไฟล์ไม่ได้: preview + long-press เสถียรกว่า download/popup
+                  if (isIOS()) {
+                    setStatus('รูปพร้อมแล้ว · กดค้างที่รูปด้านบน แล้วเลือก «บันทึกรูป»');
                     return;
                   }
 
-                  // iOS / WebView: a[download] มักไม่ทำงาน — เปิดแท็บรูป + บอก long-press
-                  if (isIOS()) {
-                    const opened = openBlobInNewTab(blob);
-                    setStatus(opened
-                      ? 'เปิดรูปแล้ว · กดปุ่มแชร์ (□↑) แล้วเลือก «บันทึกรูป» หรือกดค้างที่รูปด้านบน'
-                      : 'กดค้างที่รูปด้านบนค้างไว้ · แล้วเลือก «บันทึกรูป»');
+                  // ดาวน์โหลดตรง (Android Chrome / desktop ใช้ได้ดี)
+                  const dlOk = downloadBlob(blob, CARD_FILE);
+                  if (dlOk) {
+                    setStatus(isAndroid()
+                      ? 'ส่งรูปไปที่โฟลเดอร์ดาวน์โหลดแล้ว · ถ้าไม่พบให้กดค้างที่รูปด้านบน'
+                      : 'บันทึกรูปแล้ว · ดูในโฟลเดอร์ดาวน์โหลดได้เลย');
                     return;
                   }
 
@@ -3016,31 +3022,34 @@
                   if (canvas || blob) showPreview(canvas, blob);
 
                   // 1) แชร์รูป + ข้อความ (iOS 15+ / Android Chrome)
+                  let fileShareResult = 'unsupported';
                   if (blob) {
-                    const r = await shareFiles(blob, text);
-                    if (r === 'shared') {
+                    fileShareResult = await shareFiles(blob, text);
+                    if (fileShareResult === 'shared') {
                       setStatus('แชร์รูปเรียบร้อยแล้ว');
                       return;
                     }
-                    if (r === 'abort') {
+                    if (fileShareResult === 'abort') {
                       setStatus('');
                       return;
                     }
                   }
 
-                  // 2) แชร์ข้อความอย่างเดียว
-                  const t = await shareTextOnly(text);
-                  if (t === 'shared') {
-                    setStatus('แชร์ข้อความเรียบร้อยแล้ว · รูปอยู่ด้านบน กดค้างเพื่อบันทึกได้');
-                    return;
-                  }
-                  if (t === 'abort') {
-                    setStatus('');
-                    return;
+                  // 2) ถ้าไฟล์ไม่รองรับและยังไม่ได้เปิด Share Sheet ให้ลองแชร์ข้อความหนึ่งครั้ง
+                  if (fileShareResult === 'unsupported') {
+                    const t = await shareTextOnly(text);
+                    if (t === 'shared') {
+                      setStatus('แชร์ข้อความเรียบร้อยแล้ว · รูปอยู่ด้านบน กดค้างเพื่อบันทึกได้');
+                      return;
+                    }
+                    if (t === 'abort') {
+                      setStatus('');
+                      return;
+                    }
                   }
 
                   // 3) ไม่มี Web Share (Messenger in-app บางตัว) → ดาวน์โหลด + คัดลอกข้อความ
-                  if (blob) downloadBlob(blob, CARD_FILE);
+                  if (blob && !isIOS()) downloadBlob(blob, CARD_FILE);
                   const copied = await copyText(text);
                   if (copied) {
                     setStatus(isIOS()
