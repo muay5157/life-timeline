@@ -1379,7 +1379,9 @@
         setTimeout(() => {
           if (finished || !stillActive()) return;
           const t = Number(video.currentTime) || 0;
-          if (t < 0.15) failPlayback();
+          // WebView บางตัวให้ currentTime ค้างทั้งที่เสียงยังเล่นอยู่
+          // จึงแสดงปุ่ม Play ใหม่เฉพาะเมื่อ media หยุดจริงเท่านั้น
+          if (t < 0.15 && video.paused) failPlayback();
         }, 6000);
       }).catch(() => {
         failPlayback();
