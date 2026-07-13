@@ -1186,6 +1186,14 @@
       return 0;
     }
 
+    function isVideoNearEnd(video, expectedDuration = 0) {
+      if (!video) return false;
+      if (video.ended) return true;
+      const d = mediaDuration(video, expectedDuration);
+      const t = Number(video.currentTime) || 0;
+      return d > 0 && t > 0.05 && t >= Math.max(0, d - 0.55);
+    }
+
     /**
      * ตรวจจบคลิปแบบทน iOS/WebView — ใช้ร่วมทุกหน้า
      * @param {HTMLVideoElement} video
@@ -3376,14 +3384,14 @@
       const step = state.step;
       if (step === 0) {
         const v = document.getElementById('landingAvatar');
-        if (v && state.speaking && isVideoNearEnd(v)) {
+        if (v && state.speaking && isVideoNearEnd(v, LANDING_CLIP.duration)) {
           // bindVideoEnd จะจับเองผ่าน poll/pause — แค่ nudge play ถ้าค้างกลางคลิป
           return;
         }
       }
       if (STEP_CLIPS[step] && state.speaking) {
         const av = document.getElementById('avatar');
-        if (av && isVideoNearEnd(av)) {
+        if (av && isVideoNearEnd(av, STEP_CLIPS[step].duration)) {
           // poll ใน bindVideoEnd จะเรียก onDone — ไม่ต้องทำซ้ำ
           return;
         }
