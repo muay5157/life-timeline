@@ -1,0 +1,2727 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>แผนชีวิตของคุณ | คุยไป คลิกไป</title>
+  <meta name="description" content="สำรวจแผนชีวิต + วิเคราะห์แผนแบบ interactive ง่ายๆ 5 นาที · นักวิเคราะห์แผน AI อธิบาย คุณเลือกคำตอบ" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    /* ===== Theme: AIA (ค่าเริ่มต้น · น่าเชื่อถือ) ===== */
+    :root,
+    [data-theme="aia"] {
+      --bg: #f3f4f6;
+      --card: #ffffff;
+      --card-border: rgba(29, 29, 31, 0.18); /* ชัดขึ้นเพื่อแยกขอบจากพื้น */
+      --gold: #b01038;          /* แดงเข้มขึ้นเล็กน้อย · contrast กับพื้นขาวดีขึ้น */
+      --gold-dim: #8c0c2c;
+      --accent: #1d1d1f;
+      --accent-soft: #374151;
+      --text: #111827;           /* ใกล้ดำ · อ่านง่ายบนพื้นอ่อน */
+      --text-dim: #4b5563;      /* อย่างน้อย ~4.5:1 บน #f3f4f6 */
+      --success: #0f766e;
+      --success-on: #ffffff;
+      --danger: #b01038;
+      --radius: 20px;
+      --shadow: 0 16px 40px rgba(29, 29, 31, 0.10);
+      --glow-1: rgba(176, 16, 56, 0.12);
+      --glow-2: rgba(29, 29, 31, 0.05);
+      --speech-bg: #fff5f7;
+      --speech-border: #e8a0b0;
+      --avatar-bg: #ffffff;
+      --avatar-ring: rgba(176, 16, 56, 0.22);
+      --btn-primary-text: #ffffff;
+      --btn-primary-end: #8c0c2c;
+      --chip-selected-bg: #fde8ee;
+      --progress-track: #d1d5db;
+      --controls-bg: #ffffff;
+      --priority-bg: linear-gradient(135deg, #fff1f4, #ffffff);
+      --priority-border: #e8a0b0;
+      --priority-label: #b01038;
+      --solve-bg: #ecfdf8;
+      --solve-border: #5eead4;
+      --solve-title: #0f766e;
+      --hook-grad-end: #b01038;
+      --muted-surface: #eef0f3;
+      --on-muted: #111827;
+      --theme-name: "aia";
+    }
+
+    /* ===== Theme: Classic เดิม (ทอง + cyan · เก็บไว้สลับกลับ) ===== */
+    [data-theme="classic"] {
+      --bg: #0b0f1a;
+      --card: rgba(255,255,255,0.08);
+      --card-border: rgba(255,255,255,0.22);
+      --gold: #f5c518;
+      --gold-dim: #e0b000;
+      --accent: #22d3ee;
+      --accent-soft: #67e8f9;
+      --text: #f8fafc;
+      --text-dim: #cbd5e1;       /* สว่างขึ้น · อ่านง่ายบนพื้นมืด */
+      --success: #34d399;
+      --success-on: #052e1c;
+      --danger: #f87171;
+      --radius: 20px;
+      --shadow: 0 20px 40px rgba(0,0,0,0.4);
+      --glow-1: rgba(245,197,24,0.14);
+      --glow-2: rgba(34,211,238,0.10);
+      --speech-bg: rgba(34,211,238,0.12);
+      --speech-border: rgba(103,232,249,0.45);
+      --avatar-bg: #1a2035;
+      --avatar-ring: rgba(245,197,24,0.28);
+      --btn-primary-text: #111111;
+      --btn-primary-end: #e6a800;
+      --chip-selected-bg: rgba(245,197,24,0.22);
+      --progress-track: rgba(255,255,255,0.16);
+      --controls-bg: rgba(15,20,35,0.92);
+      --priority-bg: linear-gradient(135deg, rgba(239,68,68,0.28), rgba(245,197,24,0.16));
+      --priority-border: rgba(252,165,165,0.55);
+      --priority-label: #fecaca;
+      --solve-bg: rgba(16,185,129,0.14);
+      --solve-border: rgba(52,211,153,0.45);
+      --solve-title: #6ee7b7;
+      --hook-grad-end: #f5c518;
+      --muted-surface: rgba(255,255,255,0.08);
+      --on-muted: #f8fafc;
+      --theme-name: "classic";
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+    html, body {
+      height: 100%;
+      font-family: 'Noto Sans Thai', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      overflow-x: hidden;
+      line-height: 1.5;
+    }
+    /* ===== Accessibility: โฟกัสชัด · ห้ามตัวอักษรกลืนพื้น ===== */
+    :focus { outline: none; }
+    :focus-visible {
+      outline: 3px solid var(--gold);
+      outline-offset: 3px;
+    }
+    button:focus-visible,
+    .chip:focus-visible,
+    .path-chip:focus-visible,
+    input:focus-visible {
+      outline: 3px solid var(--gold);
+      outline-offset: 2px;
+    }
+    ::selection {
+      background: var(--gold);
+      color: var(--btn-primary-text);
+    }
+    body {
+      background:
+        radial-gradient(ellipse at 20% 0%, var(--glow-1) 0%, transparent 50%),
+        radial-gradient(ellipse at 80% 100%, var(--glow-2) 0%, transparent 50%),
+        var(--bg);
+      min-height: 100dvh;
+    }
+
+    /* ===== Layout ===== */
+    .app {
+      max-width: 480px;
+      margin: 0 auto;
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      padding-bottom: env(safe-area-inset-bottom);
+    }
+
+    /* Progress */
+    .progress-wrap {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      background: color-mix(in srgb, var(--bg) 90%, transparent);
+      backdrop-filter: blur(12px);
+      padding: 12px 20px 8px;
+      border-bottom: 1px solid var(--card-border);
+    }
+    .progress-bar {
+      height: 6px;
+      background: var(--progress-track);
+      border-radius: 99px;
+      overflow: hidden;
+    }
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--gold), var(--gold-dim));
+      border-radius: 99px;
+      transition: width 0.6s cubic-bezier(0.22,1,0.36,1);
+      width: 0%;
+    }
+    [data-theme="classic"] .progress-fill {
+      background: linear-gradient(90deg, var(--gold), var(--accent));
+    }
+    .progress-text {
+      display: flex;
+      justify-content: space-between;
+      font-size: 12px;
+      color: var(--text-dim);
+      margin-top: 6px;
+    }
+
+    /* Avatar Zone */
+    .avatar-zone {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 16px 20px 8px;
+      position: relative;
+    }
+    .avatar-container {
+      position: relative;
+      width: 120px;
+      height: 120px;
+    }
+    .avatar {
+      width: 120px;
+      height: 120px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 3px solid var(--gold);
+      box-shadow: 0 0 0 4px var(--avatar-ring), 0 10px 30px rgba(0,0,0,0.12);
+      transition: all 0.3s ease;
+      background: var(--avatar-bg);
+      display: block;
+    }
+    /* Video avatar keeps the same circular crop as image */
+    video.avatar {
+      object-fit: cover;
+      object-position: center center;
+      -webkit-mask-image: -webkit-radial-gradient(white, black); /* Safari circular clip fix */
+    }
+    /* ปุ่ม Play ทับวิดีโอวงกลม — รู้ว่ากดแล้วคลิปจะเล่น */
+    .avatar-play {
+      position: absolute;
+      inset: 0;
+      margin: 0;
+      padding: 0;
+      border: none;
+      border-radius: 50%;
+      cursor: pointer;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      background: rgba(17, 24, 39, 0.48);
+      z-index: 3;
+      transition: background 0.2s, transform 0.2s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .avatar-play.show { display: flex; }
+    .avatar-play:hover { background: rgba(17, 24, 39, 0.58); }
+    .avatar-play-circle {
+      border: 2px solid rgba(255,255,255,0.95);
+    }
+    .avatar-play:active { transform: scale(0.96); }
+    .avatar-play-circle {
+      width: 52px;
+      height: 52px;
+      border-radius: 50%;
+      background: var(--gold);
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      animation: play-pulse 1.8s ease-in-out infinite;
+      border: 2px solid #ffffff;
+    }
+    .landing-avatar .avatar-play-circle {
+      width: 58px;
+      height: 58px;
+    }
+    .avatar-play-triangle {
+      width: 0;
+      height: 0;
+      margin-left: 4px;
+      border-style: solid;
+      border-width: 10px 0 10px 16px;
+      border-color: transparent transparent transparent var(--btn-primary-text);
+    }
+    .landing-avatar .avatar-play-triangle {
+      border-width: 11px 0 11px 18px;
+    }
+    @keyframes play-pulse {
+      0%, 100% { transform: scale(1); box-shadow: 0 6px 20px rgba(0,0,0,0.2), 0 0 0 0 var(--glow-1); }
+      50% { transform: scale(1.06); box-shadow: 0 8px 24px rgba(0,0,0,0.25), 0 0 0 10px transparent; }
+    }
+    .avatar-play-hint {
+      position: absolute;
+      left: 50%;
+      bottom: -26px;
+      transform: translateX(-50%);
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text);
+      background: var(--card);
+      border: 1px solid var(--card-border);
+      border-radius: 99px;
+      padding: 3px 10px;
+      white-space: nowrap;
+      pointer-events: none;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+    .avatar-play.show ~ .avatar-play-hint,
+    .avatar-container:has(.avatar-play.show) .avatar-play-hint { opacity: 1; }
+    .avatar-play-hint { opacity: 0; transition: opacity 0.2s; }
+    .avatar-container.has-play .avatar-play-hint { opacity: 1; }
+
+    /* ซ่อนปุ่ม/ตัวเลือกจนกว่าจะฟังคลิปจบ */
+    .step-actions.is-hidden {
+      display: none !important;
+    }
+    .step-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      animation: fadeUp 0.45s ease both;
+    }
+    .listen-hint {
+      text-align: center;
+      font-size: 13px;
+      color: var(--gold);
+      padding: 12px 16px;
+      border-radius: 12px;
+      background: var(--speech-bg);
+      border: 1px dashed var(--speech-border);
+      animation: fadeUp 0.4s ease both;
+    }
+    .listen-hint.is-hidden { display: none !important; }
+
+    .avatar.speaking {
+      border-color: var(--gold);
+      box-shadow: 0 0 0 6px var(--avatar-ring), 0 0 28px var(--glow-1);
+      transform: scale(1.05);
+      animation: pulse-speak 1.2s ease-in-out infinite;
+    }
+    @keyframes pulse-speak {
+      0%, 100% { box-shadow: 0 0 0 6px var(--avatar-ring), 0 0 24px var(--glow-1); }
+      50% { box-shadow: 0 0 0 10px transparent, 0 0 36px var(--glow-1); }
+    }
+    .speaking-badge {
+      position: absolute;
+      bottom: -4px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--gold);
+      color: var(--btn-primary-text);
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 10px;
+      border-radius: 99px;
+      opacity: 0;
+      transition: opacity 0.2s;
+      white-space: nowrap;
+    }
+    .avatar.speaking + .speaking-badge { opacity: 1; }
+    .advisor-name {
+      margin-top: 10px;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--gold);
+    }
+    .advisor-role {
+      font-size: 11px;
+      color: var(--text-dim);
+    }
+    .meeting-hint {
+      margin-top: 4px;
+      font-size: 11px;
+      color: var(--gold);
+      opacity: 0.95;
+    }
+
+    /* Main Content */
+    .content {
+      flex: 1;
+      padding: 8px 20px 120px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius);
+      padding: 20px;
+      backdrop-filter: blur(10px);
+      box-shadow: var(--shadow);
+      animation: fadeUp 0.45s ease both;
+    }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(16px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .hook-title {
+      font-size: 22px;
+      font-weight: 800;
+      line-height: 1.3;
+      text-align: center;
+      color: var(--text);
+      margin-bottom: 8px;
+    }
+    [data-theme="classic"] .hook-title {
+      background: linear-gradient(135deg, #fff 30%, var(--gold));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .hook-sub {
+      text-align: center;
+      color: var(--text-dim);
+      font-size: 14px;
+      margin-bottom: 20px;
+    }
+
+    .speech-bubble {
+      background: var(--speech-bg);
+      border: 1px solid var(--speech-border);
+      border-radius: 16px 16px 16px 4px;
+      padding: 14px 16px;
+      font-size: 15px;
+      line-height: 1.55;
+      position: relative;
+      margin-bottom: 4px;
+    }
+    .speech-bubble::before {
+      content: '';
+      position: absolute;
+      left: -8px;
+      top: 16px;
+      border: 8px solid transparent;
+      border-right-color: var(--speech-border);
+    }
+
+    .question {
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 16px;
+      text-align: center;
+      line-height: 1.4;
+    }
+    .hint {
+      font-size: 13px;
+      color: var(--text-dim);
+      text-align: center;
+      margin-bottom: 12px;
+    }
+
+    /* Buttons & Controls */
+    .btn-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    .btn-grid.one { grid-template-columns: 1fr; }
+    .btn-grid.three { grid-template-columns: 1fr 1fr 1fr; }
+
+    .btn {
+      appearance: none;
+      border: 1.5px solid var(--card-border);
+      background: var(--card);
+      color: var(--text);
+      font-family: inherit;
+      font-size: 15px;
+      font-weight: 600;
+      padding: 14px 12px;
+      border-radius: 14px;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    .btn:active { transform: scale(0.97); }
+    .btn:hover, .btn.selected {
+      border-color: var(--gold);
+      background: var(--chip-selected-bg);
+      color: var(--gold);
+      box-shadow: 0 0 0 3px var(--avatar-ring);
+    }
+    .btn.primary {
+      background: linear-gradient(135deg, var(--gold), var(--btn-primary-end));
+      color: var(--btn-primary-text);
+      border: none;
+      font-weight: 700;
+      font-size: 16px;
+      padding: 16px;
+      box-shadow: 0 8px 24px var(--glow-1);
+    }
+    .btn.primary:hover { filter: brightness(1.08); }
+    .btn.ghost {
+      background: var(--muted-surface);
+      border: 1.5px solid var(--card-border);
+      color: var(--text);
+      font-size: 13px;
+      padding: 10px;
+    }
+    .btn.ghost:hover {
+      border-color: var(--gold);
+      color: var(--gold);
+      background: var(--chip-selected-bg);
+    }
+    .btn:disabled, .btn.waiting {
+      opacity: 1;
+      cursor: not-allowed;
+      transform: none !important;
+      filter: none !important;
+      background: var(--muted-surface) !important;
+      color: var(--text-dim) !important;
+      border-color: var(--card-border) !important;
+      box-shadow: none !important;
+    }
+
+    /* Chips multi-select */
+    .chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: center;
+    }
+    .chip {
+      padding: 10px 16px;
+      border-radius: 99px;
+      border: 1.5px solid var(--card-border);
+      background: var(--card);
+      color: var(--text);
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+      user-select: none;
+    }
+    .chip.selected {
+      background: var(--chip-selected-bg);
+      border-color: var(--gold);
+      color: var(--gold);
+    }
+
+    /* Slider */
+    .slider-wrap {
+      margin: 12px 0 8px;
+    }
+    .slider-label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 13px;
+      color: var(--text-dim);
+      margin-bottom: 6px;
+    }
+    .slider-value {
+      font-size: 28px;
+      font-weight: 800;
+      text-align: center;
+      color: var(--gold);
+      margin: 8px 0 12px;
+      letter-spacing: -0.5px;
+    }
+    input[type=range] {
+      -webkit-appearance: none;
+      width: 100%;
+      height: 8px;
+      border-radius: 99px;
+      background: var(--progress-track);
+      outline: none;
+    }
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--gold), var(--btn-primary-end));
+      cursor: pointer;
+      box-shadow: 0 2px 10px var(--glow-1);
+      border: 3px solid #fff;
+    }
+
+    /* Big number result */
+    .big-number {
+      font-size: 42px;
+      font-weight: 800;
+      text-align: center;
+      color: var(--gold);
+      line-height: 1.1;
+      margin: 8px 0;
+    }
+    .big-label {
+      text-align: center;
+      font-size: 13px;
+      color: var(--text-dim);
+    }
+
+    /* Pyramid — โครงตาม Assure Wealth Financial Pyramid */
+    .pyramid {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 5px;
+      margin: 16px 0 8px;
+    }
+    .pyr-level {
+      min-height: 38px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      font-size: 11px;
+      font-weight: 800;
+      border-radius: 8px;
+      color: #111827;
+      transition: all 0.4s;
+      opacity: 0.78; /* ห้ามจางเกินจนอ่านไม่ออก */
+      text-align: center;
+      padding: 6px 8px;
+      line-height: 1.25;
+      border: 1px solid rgba(17, 24, 39, 0.12);
+      text-shadow: none;
+    }
+    .pyr-level small {
+      display: block;
+      font-size: 10px;
+      font-weight: 600;
+      opacity: 0.95;
+      margin-top: 2px;
+      color: inherit;
+    }
+    .pyr-level.active {
+      opacity: 1;
+      transform: scale(1.02);
+      box-shadow: 0 4px 14px rgba(0,0,0,0.18);
+      border-color: rgba(17, 24, 39, 0.2);
+    }
+    /* ชั้นพีระมิด: ตัวอักษรเข้มบนพื้นสว่าง / ขาวบนพื้นเข้ม */
+    .pyr-level.l4 { width: 52%; background: linear-gradient(135deg, #fde68a, #f59e0b); color: #111827; }
+    .pyr-level.l3 { width: 68%; background: linear-gradient(135deg, #3b82f6, #1d4ed8); color: #ffffff; }
+    .pyr-level.l2 { width: 84%; background: linear-gradient(135deg, #86efac, #16a34a); color: #052e16; }
+    .pyr-base {
+      width: 100%;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 5px;
+    }
+    .pyr-base .pyr-level { width: 100%; min-height: 48px; }
+    .pyr-level.l1a { background: linear-gradient(135deg, #67e8f9, #0891b2); color: #083344; }
+    .pyr-level.l1b { background: linear-gradient(135deg, #a78bfa, #6d28d9); color: #ffffff; }
+    .pyr-level.pyr-highlight {
+      box-shadow: 0 0 0 2px var(--gold), 0 6px 18px var(--glow-1);
+      transform: scale(1.04);
+    }
+    .pyr-level.pyr-highlight.active {
+      box-shadow: 0 0 0 2px var(--gold), 0 8px 22px var(--glow-1);
+    }
+
+    /* Result cards */
+    .result-grid {
+      display: grid;
+      gap: 10px;
+    }
+    .result-item {
+      background: var(--muted-surface);
+      border-radius: 12px;
+      padding: 12px 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      border: 1.5px solid var(--card-border);
+    }
+    .result-item .label { font-size: 13px; color: var(--text-dim); font-weight: 700; }
+    .result-item .value { font-weight: 800; color: var(--gold); font-size: 15px; text-align: right; }
+
+    /* Priority badge */
+    .priority {
+      background: var(--priority-bg);
+      border: 1px solid var(--priority-border);
+      border-radius: 14px;
+      padding: 16px;
+      text-align: center;
+      margin: 12px 0;
+    }
+    .priority-title {
+      font-size: 12px;
+      color: var(--priority-label);
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+    .priority-main {
+      font-size: 18px;
+      font-weight: 800;
+      color: var(--text);
+    }
+    .priority-gap {
+      margin-top: 8px;
+      font-size: 13px;
+      color: var(--gold);
+      font-weight: 600;
+    }
+    .solve-card {
+      background: var(--solve-bg);
+      border: 1px solid var(--solve-border);
+      border-radius: 14px;
+      padding: 16px;
+    }
+    .solve-card h3 {
+      font-size: 14px;
+      color: var(--solve-title);
+      margin-bottom: 10px;
+      font-weight: 700;
+    }
+    .solve-steps {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      padding: 0;
+      margin: 0;
+    }
+    .solve-steps li {
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+      font-size: 14px;
+      line-height: 1.45;
+      color: var(--text);
+    }
+    .solve-num {
+      flex-shrink: 0;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: var(--solve-bg);
+      color: var(--solve-title);
+      border: 1px solid var(--solve-border);
+      font-size: 12px;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-top: 1px;
+    }
+    .metric-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 8px;
+      margin: 4px 0 8px;
+    }
+    .metric-box {
+      background: var(--card);
+      border: 1.5px solid var(--card-border);
+      border-radius: 12px;
+      padding: 10px 8px;
+      text-align: center;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+    }
+    .metric-box .m-label {
+      font-size: 11px;
+      color: var(--text-dim);
+      margin-bottom: 4px;
+      font-weight: 700;
+    }
+    .metric-box .m-val {
+      font-size: 13px;
+      font-weight: 800;
+      color: var(--gold);
+      line-height: 1.25;
+    }
+    .path-chips {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-top: 8px;
+    }
+    .path-chip {
+      text-align: left;
+      padding: 12px 14px;
+      border-radius: 12px;
+      border: 1.5px solid var(--card-border);
+      background: var(--card);
+      color: var(--text);
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      font-family: inherit;
+    }
+    .path-chip.selected {
+      border-color: var(--gold);
+      background: var(--chip-selected-bg);
+      color: var(--gold);
+      box-shadow: 0 0 0 2px var(--avatar-ring);
+    }
+    .path-chip small {
+      display: block;
+      font-weight: 600;
+      opacity: 1;
+      margin-top: 3px;
+      font-size: 12px;
+      color: var(--text-dim);
+    }
+    .path-chip.selected small {
+      color: var(--gold-dim);
+    }
+    .close-q {
+      text-align: center;
+      font-size: 14px;
+      color: var(--gold);
+      margin: 8px 0 4px;
+      line-height: 1.5;
+      font-weight: 600;
+    }
+
+    /* Bottom fixed CTA */
+    .bottom-bar {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      max-width: 480px;
+      margin: 0 auto;
+      padding: 12px 20px calc(16px + env(safe-area-inset-bottom));
+      background: linear-gradient(to top, var(--bg), color-mix(in srgb, var(--bg) 85%, transparent));
+      backdrop-filter: blur(12px);
+      border-top: 1px solid var(--card-border);
+      z-index: 40;
+      display: none;
+    }
+    .bottom-bar.show { display: block; }
+
+    /* Confetti */
+    .confetti {
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      pointer-events: none;
+      z-index: 100;
+      overflow: hidden;
+    }
+
+    /* Loading / TTS status */
+    .tts-status {
+      font-size: 11px;
+      color: var(--text-dim);
+      text-align: center;
+      min-height: 16px;
+    }
+
+    /* Utility */
+    .hidden { display: none !important; }
+    .center { text-align: center; }
+    .mt-8 { margin-top: 8px; }
+    .mt-16 { margin-top: 16px; }
+    .gap-8 { gap: 8px; }
+    .flex { display: flex; }
+    .flex-col { flex-direction: column; }
+    .items-center { align-items: center; }
+    .justify-center { justify-content: center; }
+    .w-full { width: 100%; }
+
+    /* Age special */
+    .age-display {
+      font-size: 64px;
+      font-weight: 800;
+      text-align: center;
+      color: var(--gold);
+      line-height: 1;
+      margin: 4px 0 12px;
+    }
+
+    /* Skip / mute */
+    .controls {
+      position: absolute;
+      top: 12px;
+      right: 16px;
+      display: flex;
+      gap: 8px;
+      z-index: 60;
+    }
+    .icon-btn {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      border: 1px solid var(--card-border);
+      background: var(--controls-bg);
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 16px;
+      box-shadow: var(--shadow);
+    }
+
+
+    /* DEV only — ข้ามคลิปตอนพัฒนา (?dev=1) */
+    .dev-bar {
+      display: none;
+      position: fixed;
+      bottom: 90px;
+      right: 12px;
+      z-index: 200;
+      flex-direction: column;
+      gap: 8px;
+      align-items: flex-end;
+    }
+    .dev-bar.show { display: flex; }
+    .dev-btn {
+      appearance: none;
+      border: none;
+      border-radius: 12px;
+      padding: 12px 16px;
+      font-family: inherit;
+      font-size: 13px;
+      font-weight: 800;
+      cursor: pointer;
+      background: #ef4444;
+      color: #fff;
+      box-shadow: 0 8px 24px rgba(239,68,68,0.45);
+    }
+    .dev-btn:active { transform: scale(0.97); }
+    .dev-badge {
+      font-size: 10px;
+      font-weight: 800;
+      color: #ffffff;
+      background: #b01038;
+      padding: 4px 10px;
+      border-radius: 99px;
+      letter-spacing: 0.02em;
+    }
+    [data-theme="classic"] .dev-badge {
+      background: #b45309;
+      color: #fffbeb;
+    }
+
+    /* Landing special */
+    .landing-avatar {
+      width: 160px;
+      height: 160px;
+      margin-bottom: 8px;
+    }
+    .landing-avatar .avatar {
+      width: 160px;
+      height: 160px;
+    }
+
+    /* Final CTA */
+    .final-cta {
+      background: var(--priority-bg);
+      border: 1px solid var(--priority-border);
+      border-radius: 16px;
+      padding: 20px;
+      text-align: center;
+    }
+    .progress-wrap {
+      background: color-mix(in srgb, var(--bg) 92%, transparent);
+    }
+    [data-theme="aia"] .progress-wrap {
+      background: rgba(243, 244, 246, 0.96);
+      border-bottom: 1px solid var(--card-border);
+    }
+    [data-theme="aia"] .card {
+      box-shadow: var(--shadow);
+    }
+    /* ตัวอักษรบนพื้นสีทอง/แดง ต้องมี contrast ชัด */
+    [data-theme="aia"] .btn.primary,
+    [data-theme="aia"] .speaking-badge {
+      color: #ffffff !important;
+    }
+    [data-theme="classic"] .btn.primary {
+      color: #111111 !important;
+    }
+    /* ลิงก์/strong ใน bubble */
+    .speech-bubble strong {
+      color: var(--gold);
+      font-weight: 800;
+    }
+    /* slider track ชัดขึ้น */
+    input[type=range]::-webkit-slider-runnable-track {
+      height: 8px;
+      border-radius: 99px;
+      background: var(--progress-track);
+    }
+    /* icon controls: ขอบชัดบนพื้นอ่อน */
+    [data-theme="aia"] .icon-btn {
+      border-color: rgba(29,29,31,0.2);
+      color: #111827;
+    }
+    [data-theme="classic"] .icon-btn {
+      border-color: rgba(255,255,255,0.28);
+      color: #f8fafc;
+    }
+    /* dev badge อ่านง่าย */
+    .dev-badge {
+      color: #ffffff !important;
+      background: #b01038 !important;
+    }
+    [data-theme="classic"] .dev-badge {
+      background: #b45309 !important;
+    }
+  </style>
+</head>
+<body>
+  <div class="app" id="app">
+    <!-- Controls: เสียงจากวิดีโอ (ไม่ใช้ TTS) -->
+    <div class="controls">
+      <button class="icon-btn" id="btnMute" title="ปิดเสียงวิดีโอ">🔊</button>
+      <button class="icon-btn" id="btnSkip" title="ข้ามเสียง" style="display:none">⏭</button>
+    </div>
+
+    <!-- Progress -->
+    <div class="progress-wrap" id="progressWrap" style="display:none">
+      <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+      <div class="progress-text">
+        <span id="stepLabel">ขั้นตอน 1/10</span>
+        <span id="percentLabel">0%</span>
+      </div>
+    </div>
+
+    <!-- Avatar: วิดีโอวนลูปวงกลม — เห็นหน้านักวิเคราะห์แผน AI -->
+    <div class="avatar-zone" id="avatarZone" style="display:none">
+      <div class="avatar-container" id="zoneAvatarWrap">
+        <video
+          class="avatar"
+          id="avatar"
+          src="avatar.mp4"
+          poster="avatar.jpg"
+          playsinline
+          webkit-playsinline
+          disablepictureinpicture
+          aria-label="นักวิเคราะห์แผน AI"
+        ></video>
+        <button type="button" class="avatar-play" id="zonePlayBtn" aria-label="เล่นคลิปนักวิเคราะห์แผน">
+          <span class="avatar-play-circle" aria-hidden="true">
+            <span class="avatar-play-triangle"></span>
+          </span>
+        </button>
+        <div class="speaking-badge" id="speakingBadge">กำลังพูด...</div>
+      </div>
+      <div class="advisor-name">นักวิเคราะห์แผน AI</div>
+      <div class="advisor-role">แผนชีวิตของคุณ · คุยไป คลิกไป</div>
+      <div class="meeting-hint">คุณเลือก · ระบบวิเคราะห์ให้</div>
+    </div>
+
+    <!-- Content -->
+    <div class="content" id="content">
+      <!-- Dynamically filled -->
+    </div>
+
+    <!-- Bottom bar -->
+    <div class="bottom-bar" id="bottomBar">
+      <button class="btn primary w-full" id="btnNext">ไปต่อ →</button>
+    </div>
+  </div>
+
+  <div class="confetti" id="confetti"></div>
+
+  <!-- โหมดพัฒนา: เปิดด้วย ?dev=1 — ลูกค้าจริงจะไม่เห็น -->
+  <div class="dev-bar" id="devBar">
+    <span class="dev-badge">DEV MODE</span>
+    <button type="button" class="dev-btn" id="devNextBtn">DEV Next →</button>
+  </div>
+
+  <script>
+    // ===================== DATA & STATE =====================
+    const TOTAL_STEPS = 10;
+    // DEV: ใส่ ?dev=1 ใน URL เพื่อข้ามคลิป / กด Next ได้ทันที (เฉพาะตอนพัฒนา)
+    const DEV_MODE = new URLSearchParams(location.search).has('dev');
+    // คลิปเสียงจริงทีละหน้า (lazy load) · ไม่ใช้ TTS
+    const STEP_CLIPS = {
+      1: { src: 'media/01-age.mp4', poster: 'media/01-age.jpg' },
+      2: { src: 'media/02-retire.mp4', poster: 'media/02-retire.jpg' },
+      3: { src: 'media/03-prepared.mp4', poster: 'media/03-prepared.jpg' },
+      4: { src: 'media/04-family.mp4', poster: 'media/04-family.jpg' },
+      5: { src: 'media/05-goals.mp4', poster: 'media/05-goals.jpg' },
+      6: { src: 'media/06-risks.mp4', poster: 'media/06-risks.jpg' },
+      7: { src: 'media/07-pyramid.mp4', poster: 'media/07-pyramid.jpg' },
+      8: { src: 'media/08-protect.mp4', poster: 'media/08-protect.jpg' },
+      9: { src: 'media/09-invest.mp4', poster: 'media/09-invest.jpg' },
+      10: { src: 'media/10-summary.mp4', poster: 'media/10-summary.jpg' },
+    };
+    let state = {
+      step: 0,
+      muted: false,
+      speaking: false,
+      introPlayed: false,
+      stepHeard: {}, // step -> true หลังฟังจบอย่างน้อย 1 ครั้ง
+      answers: {
+        age: 35,
+        retireAge: 60,
+        monthlySpend: 30000,
+        prepared: 0,
+        careParents: null,
+        hasSpouse: null,
+        kids: 0,
+        kidsAges: [],
+        eduGoal: 'bachelor',
+        goals: [],
+        risks: [],
+        monthlyExpense: 50000,
+        efAmount: 0,
+        hasHealth: null,
+        hasLife: null,
+        hasCI: null,
+        hasAccident: null,
+        riskTol: 'medium',
+        topWorry: null
+      }
+    };
+
+    // ตัวเลขแบบคนไทย: หมื่น / แสน / ล้าน (ไม่ใช้ "60 พัน")
+    const fmt = (n) => new Intl.NumberFormat('th-TH').format(Math.round(Number(n) || 0));
+    const _trimDec = (x) => {
+      const r = Math.round(x * 10) / 10;
+      return (r % 1 === 0) ? String(r) : r.toFixed(1);
+    };
+    const fmtM = (n) => {
+      n = Math.round(Math.abs(Number(n) || 0));
+      if (n === 0) return '0';
+      if (n >= 1000000) return _trimDec(n / 1000000) + ' ล้าน';   // 1,000,000+
+      if (n >= 100000)  return _trimDec(n / 100000) + ' แสน';    // 100,000–999,999
+      if (n >= 10000)   return _trimDec(n / 10000) + ' หมื่น';    // 10,000–99,999
+      if (n >= 1000)    return _trimDec(n / 1000) + ' พัน';      // 1,000–9,999 เท่านั้น
+      return fmt(n);
+    };
+    // ใส่หน่วยบาทท้าย (ใช้โชว์เงิน)
+    const fmtB = (n) => fmtM(n) + ' บาท';
+
+    // เงินที่เตรียมไว้: สไลเดอร์ไม่เชิงเส้น — ช่วงต้นละเอียดทีละ 1 พัน (UX ดีกว่า step คงที่ 0–20 ล้าน)
+    const PREP_SLIDER_MAX = 500;
+    const PREP_AMOUNT_MAX = 20000000;
+    function preparedFromSlider(i) {
+      i = Math.max(0, Math.min(PREP_SLIDER_MAX, Math.round(Number(i) || 0)));
+      if (i === 0) return 0;
+      if (i <= 150) return i * 1000;                                   // 1 พัน – 1.5 แสน
+      if (i <= 300) return 150000 + (i - 150) * 10000;                  // → ~1.65 ล้าน
+      if (i <= 400) return 1650000 + (i - 300) * 50000;                 // → ~6.65 ล้าน
+      return Math.min(
+        PREP_AMOUNT_MAX,
+        6650000 + (i - 400) * Math.round((PREP_AMOUNT_MAX - 6650000) / 100)
+      );                                                               // → 20 ล้าน
+    }
+    function sliderFromPrepared(p) {
+      p = Math.max(0, Math.round(Number(p) || 0));
+      if (p <= 0) return 0;
+      if (p <= 150000) return Math.min(150, Math.round(p / 1000));
+      if (p <= 1650000) return 150 + Math.round((p - 150000) / 10000);
+      if (p <= 6650000) return 300 + Math.round((p - 1650000) / 50000);
+      if (p >= PREP_AMOUNT_MAX) return PREP_SLIDER_MAX;
+      return Math.min(
+        PREP_SLIDER_MAX,
+        400 + Math.round((p - 6650000) / ((PREP_AMOUNT_MAX - 6650000) / 100))
+      );
+    }
+
+    // ===================== AVATAR VIDEO + เสียงจริง =====================
+    function ensureAvatarPlaying() {
+      const av = document.getElementById('avatar');
+      // ขั้นที่มีคลิปจริง จะเล่นผ่าน playStepClip — อย่าทับ
+      if (STEP_CLIPS[state.step]) return;
+      if (av && av.tagName === 'VIDEO') {
+        av.muted = true;
+        av.loop = true;
+        av.play().catch(() => {});
+      }
+    }
+
+    function startSilentLoop(video) {
+      if (!video) return;
+      video.loop = true;
+      video.muted = true;
+      video.classList.remove('speaking');
+      video.play().catch(() => {});
+      state.speaking = false;
+      const skip = document.getElementById('btnSkip');
+      if (skip) skip.style.display = 'none';
+    }
+
+    function showAvatarPlay(show) {
+      const btn = document.getElementById('tapSoundBtn');
+      const wrap = btn && btn.closest('.avatar-container');
+      if (!btn) return;
+      btn.classList.toggle('show', !!show);
+      btn.setAttribute('aria-hidden', show ? 'false' : 'true');
+      if (wrap) wrap.classList.toggle('has-play', !!show);
+    }
+
+    function showZonePlay(show) {
+      const btn = document.getElementById('zonePlayBtn');
+      const wrap = document.getElementById('zoneAvatarWrap');
+      if (!btn) return;
+      btn.classList.toggle('show', !!show);
+      if (wrap) wrap.classList.toggle('has-play', !!show);
+    }
+
+    /**
+     * เล่นคลิปของขั้น (avatar zone)
+     * ฟังจบรอบหนึ่งก่อน ปุ่มไปต่อ/ข้ามถึงใช้ได้เต็มที่
+     */
+    /** โชว์/ซ่อนโซนให้ลูกค้าทำ action หลังฟังจบ */
+    function setStepActionsVisible(visible) {
+      document.querySelectorAll('.step-actions').forEach(el => {
+        el.classList.toggle('is-hidden', !visible);
+      });
+      document.querySelectorAll('.listen-hint').forEach(el => {
+        el.classList.toggle('is-hidden', !!visible);
+      });
+    }
+
+    /** HTML พีระมิดการเงิน (ใช้ซ้ำหน้า 7, 9) */
+    function pyramidHTML(opts = {}) {
+      const hi = opts.highlight || {}; // { l4, l3, l2, l1a, l1b }
+      const cls = (key, base) => base + (hi[key] ? ' pyr-highlight' : '');
+      return `
+        <div class="pyramid" id="pyramid">
+          <div class="pyr-level ${cls('l4','l4')}">ส่งต่อมรดก</div>
+          <div class="pyr-level ${cls('l3','l3')}">การลงทุน</div>
+          <div class="pyr-level ${cls('l2','l2')}">การออม
+            <small>สั้น · กลาง · ยาว</small>
+          </div>
+          <div class="pyr-base">
+            <div class="pyr-level ${cls('l1a','l1a')}">เงินฉุกเฉิน
+              <small>3–6 เท่าค่าใช้จ่าย/เดือน</small>
+            </div>
+            <div class="pyr-level ${cls('l1b','l1b')}">บริหารความเสี่ยง
+              <small>ประกันที่จำเป็น</small>
+            </div>
+          </div>
+        </div>`;
+    }
+    function animatePyramid() {
+      document.querySelectorAll('.pyr-level').forEach((el, i) => {
+        el.classList.remove('active');
+        setTimeout(() => el.classList.add('active'), 120 + i * 140);
+      });
+    }
+
+    const RISK_LABEL = {
+      illness: 'เจ็บป่วย / โรคร้าย',
+      job: 'ตกงาน / รายได้หาย',
+      economy: 'เศรษฐกิจไม่ดี',
+      tech: 'AI / เทคโนโลยี disrupt',
+      accident: 'อุบัติเหตุ',
+      family: 'เหตุการณ์ครอบครัว',
+      inflation: 'เงินเฟ้อ',
+      none: 'ยังไม่ค่อยกังวล'
+    };
+
+    /**
+     * หน้าจบแบบครูสอน: ชี้ปัญหา → วิธีแก้เป็นขั้น
+     * อ้างอิง flow นาทีท้ายคลิป Timeline of Life (เลือกเรื่องสำคัญ → ลงรายละเอียด)
+     */
+    function buildPriorityPlan(a) {
+      const efNeed3 = a.monthlyExpense * 3;
+      const efNeed6 = a.monthlyExpense * 6;
+      const efGap = Math.max(efNeed3 - (a.efAmount || 0), 0);
+      const retireGap = Math.max((a._totalNeed || 0) - (a.prepared || 0), 0);
+      const hasKids = (a.kids || 0) > 0;
+      const insWeak = a.hasHealth === false || a.hasLife === false || a.hasHealth == null || a.hasLife == null;
+      const risks = (a.risks || []).filter(r => r !== 'none');
+      const worryJob = risks.some(r => r === 'job' || r === 'tech');
+      const worryHealth = risks.some(r => r === 'illness' || r === 'accident');
+
+      // ลำดับตามฐานพีระมิดก่อน แล้วค่อยเป้าหมาย (แบบครู: ฐานไม่แน่นพังทั้งก้อน)
+      if (efGap > a.monthlyExpense * 0.5) {
+        return {
+          id: 'ef',
+          title: 'เงินสำรองฉุกเฉินยังไม่พอ',
+          gap: `ยังขาดประมาณ ${fmtM(efGap)} เพื่อให้ถึง 3 เดือน`,
+          reason: 'ถ้ารายได้สะดุด — งานเปลี่ยน AI เศรษฐกิจ — ไม่มีเงินฉุกเฉินดึงใช้ทันที แผนอื่นก็เดินต่อยาก',
+          steps: [
+            `ตั้งเป้าเงินฉุกเฉิน ${fmtM(efNeed3)} – ${fmtM(efNeed6)} (3–6 เท่าค่าใช้จ่าย)`,
+            'แยกบัญชี อย่าเอาไปลงทุนเสี่ยง — ต้องถอนใช้ได้ทันที',
+            'เติมทีละเดือนจนครบ ก่อนเร่งลงทุนชั้นบน'
+          ]
+        };
+      }
+      if (insWeak || worryHealth) {
+        return {
+          id: 'risk',
+          title: 'บริหารความเสี่ยงยังไม่ครบ',
+          gap: 'ความคุ้มครองพื้นฐานยังไม่ครบ',
+          reason: 'เจ็บป่วย ทุพพลภาพ หรือเหตุไม่คาดคิด ทำให้แผนบ้าน ลูก เกษียณพังได้ทั้งก้อน',
+          steps: [
+            'เช็คสิทธิ์ที่มีอยู่ก่อน: ประกันสังคม / กลุ่ม / บัตรทอง / ข้าราชการ',
+            'เติมช่องว่าง: สุขภาพ–โรคร้ายแรง · ชีวิต · อุบัติเหตุ ตามความจำเป็น',
+            'คุยรายละเอียดวงเงินกับนักวิเคราะห์แผน — อย่าซื้อของก่อนรู้ช่องว่าง'
+          ]
+        };
+      }
+      if (worryJob && insWeak) {
+        return {
+          id: 'income',
+          title: 'คุ้มครองรายได้ครอบครัว',
+          gap: 'กังวลงาน/รายได้สะดุด แต่ความคุ้มครองยังไม่ชัด',
+          reason: 'AI หรือเศรษฐกิจอาจกระทบรายได้ — ต้องรู้ว่าครอบครัวอยู่ได้กี่ปีถ้าเกิดเหตุ',
+          steps: [
+            'รวมภาระหนี้ + ค่าใช้จ่ายครอบครัว + ค่าเรียนบุตร (ถ้ามี)',
+            'คำนวณทุนคุ้มครองรายได้ที่จำเป็นจริง',
+            'วางแผนด้วยเครื่องมือ ASW / นัดนักวิเคราะห์แผนลงตัวเลข'
+          ]
+        };
+      }
+      if (hasKids) {
+        return {
+          id: 'kids',
+          title: 'กองทุนการศึกษาบุตร',
+          gap: `มีบุตร ${a.kids} คน — ควรวางแผนให้ชัด`,
+          reason: 'เป้าหมายลูกมักใหญ่และมี deadline — ยิ่งเริ่มช้า ยิ่งต้องเติมแรง',
+          steps: [
+            'ล็อกเป้าหมายเรียน: รัฐ / เอกชน / นานาชาติ และระดับจบ',
+            'ดูอายุลูกและจำนวนปีที่เหลือ',
+            'เลือกกองทุน/แผนที่การันตีการศึกษาได้ แม้เกิดเหตุกับผู้ปกครอง'
+          ]
+        };
+      }
+      if (retireGap > 1000000) {
+        return {
+          id: 'retire',
+          title: 'ช่องว่างเงินเกษียณ',
+          gap: `ยังขาดประมาณ ${fmtM(retireGap)} ถึงเป้าคร่าวๆ`,
+          reason: `อยากใช้ ${fmt(a.monthlySpend)} บาท/เดือน หลังเกษียณอายุ ${a.retireAge} — วันนี้ยังไม่ครบ`,
+          steps: [
+            `ทบทวนเป้า: เกษียณ ${a.retireAge} ปี · ใช้ ${fmt(a.monthlySpend)} บาท/เดือน`,
+            `ดูช่องว่าง ${fmtM(retireGap)} แล้วแบ่งเติมรายเดือน/ปี`,
+            'ลงรายละเอียดใน ASW Online หรือนัดคำนวณแผนจริง'
+          ]
+        };
+      }
+      return {
+        id: 'invest',
+        title: 'เริ่มออม–ลงทุนอย่างเป็นระบบ',
+        gap: 'ฐานพอเดินได้ — ถึงเวลาชั้นกลางของพีระมิด',
+        reason: 'มีฐานแล้ว ถ้ายังไม่จัดระเบียบออม/ลงทุน เงินจะไม่ทำงาน',
+        steps: [
+          'แยกเป้าสั้น กลาง ยาว (1–3 / 3–7 / 7+ ปี)',
+          `เลือกระดับความเสี่ยงที่รับได้ (ตอนนี้เลือก: ${a.riskTol === 'low' ? 'ต่ำ' : a.riskTol === 'high' ? 'สูง' : 'ปานกลาง'})`,
+          'จัดสัดส่วนและทบทวนปีละครั้ง — ชั้นบน (มรดก) ค่อยคิดเมื่อพร้อม'
+        ]
+      };
+    }
+
+    /**
+     * เกต UX: ฟังคลิปก่อน → ค่อยโชว์ปุ่ม/สไลด์ + ปลด next
+     * @param {number} step
+     * @param {{ nextLabel: string, onNext: function, wireActions?: function }} opts
+     */
+    function gateStepWithClip(step, opts) {
+      const already = !!state.stepHeard[step] || DEV_MODE;
+
+      const reveal = () => {
+        state.stepHeard[step] = true;
+        setStepActionsVisible(true);
+        if (typeof opts.wireActions === 'function') opts.wireActions();
+        showBottom(opts.nextLabel, () => {
+          if (!state.stepHeard[step]) return;
+          stopSpeak();
+          opts.onNext();
+        });
+        btnNext.disabled = false;
+        btnNext.classList.remove('waiting');
+      };
+
+      if (already) {
+        setStepActionsVisible(true);
+        if (typeof opts.wireActions === 'function') opts.wireActions();
+        showBottom(opts.nextLabel, () => {
+          stopSpeak();
+          opts.onNext();
+        });
+        btnNext.disabled = false;
+        btnNext.classList.remove('waiting');
+        playStepClip(step, { silentIfHeard: !DEV_MODE && !!state.stepHeard[step], onDone: () => {} });
+        if (DEV_MODE) {
+          stopSpeak();
+          startSilentLoop(document.getElementById('avatar'));
+        }
+      } else {
+        setStepActionsVisible(false);
+        showBottom('กำลังฟัง... 🎧', () => {});
+        btnNext.disabled = true;
+        btnNext.classList.add('waiting');
+        playStepClip(step, { onDone: reveal });
+      }
+
+      const zoneBtn = document.getElementById('zonePlayBtn');
+      if (zoneBtn) {
+        zoneBtn.onclick = () => {
+          state.muted = false;
+          document.getElementById('btnMute').textContent = '🔊';
+          playStepClip(step, { onDone: reveal });
+        };
+      }
+    }
+
+    function playStepClip(step, opts = {}) {
+      const clip = STEP_CLIPS[step];
+      const av = document.getElementById('avatar');
+      if (!clip || !av) {
+        ensureAvatarPlaying();
+        if (opts.onDone) opts.onDone();
+        return;
+      }
+
+      const markDone = () => {
+        state.stepHeard[step] = true;
+        state.speaking = false;
+        startSilentLoop(av);
+        showZonePlay(false);
+        if (opts.onDone) opts.onDone();
+      };
+
+      if (av.dataset.clipSrc !== clip.src) {
+        av.dataset.clipSrc = clip.src;
+        av.src = clip.src;
+        if (clip.poster) av.poster = clip.poster;
+        av.load();
+      }
+
+      if (state.muted) {
+        startSilentLoop(av);
+        showZonePlay(true);
+        return;
+      }
+
+      // เคยฟังแล้ว + ขอข้ามเสียง → วนเงียบได้
+      if (state.stepHeard[step] && opts.silentIfHeard) {
+        startSilentLoop(av);
+        showZonePlay(false);
+        if (opts.onDone) opts.onDone();
+        return;
+      }
+
+      av.loop = false;
+      av.muted = false;
+      try { av.currentTime = 0; } catch (_) {}
+      av.classList.add('speaking');
+      state.speaking = true;
+      document.getElementById('btnSkip').style.display = state.stepHeard[step] ? 'flex' : 'none';
+      av.onended = markDone;
+      showZonePlay(false);
+
+      const p = av.play();
+      if (p && p.then) {
+        p.then(() => showZonePlay(false)).catch(() => {
+          av.pause();
+          try { av.currentTime = 0; } catch (_) {}
+          av.classList.remove('speaking');
+          state.speaking = false;
+          document.getElementById('btnSkip').style.display = 'none';
+          showZonePlay(true);
+        });
+      }
+    }
+
+    /** อัปเดตปุ่มหลักหน้า Landing */
+    function setLandingCTA(mode) {
+      const btn = document.getElementById('startBtn');
+      if (!btn) return;
+      if (mode === 'ready') {
+        btn.disabled = false;
+        btn.textContent = 'เริ่มดูกัน 🚀';
+      } else if (mode === 'playing') {
+        btn.disabled = true;
+        btn.textContent = 'กำลังฟัง... 🎧';
+      }
+    }
+
+    /**
+     * เล่นคลิปหน้าแรก (ปุ่ม Play / เริ่มดูกัน ใช้ตัวเดียวกัน)
+     * - ต้องฟังจนจบรอบหนึ่งก่อน ถึงจะข้ามได้
+     * - จบคลิป → ไปหน้าถัดไปอัตโนมัติ
+     */
+    function playLandingVoice(video) {
+      if (!video || state.step !== 0) return;
+      // กำลังเล่นอยู่แล้ว — ไม่รีสตาร์ท
+      if (state.speaking && !video.paused && !video.muted) return;
+
+      const finishIntro = () => {
+        state.introPlayed = true; // ฟังจบรอบหนึ่งแล้ว → อนุญาตข้ามครั้งหน้า
+        state.speaking = false;
+        showAvatarPlay(false);
+        video.classList.remove('speaking');
+        document.getElementById('btnSkip').style.display = 'none';
+        setLandingCTA('ready');
+        if (state.step === 0) goTo(1);
+      };
+
+      if (state.muted) {
+        state.muted = false;
+        document.getElementById('btnMute').textContent = '🔊';
+      }
+
+      video.loop = false;
+      video.muted = false;
+      try { video.currentTime = 0; } catch (_) {}
+      video.classList.add('speaking');
+      state.speaking = true;
+      // รอบแรก: ซ่อนปุ่มข้าม จนกว่าจะฟังจบ
+      document.getElementById('btnSkip').style.display = state.introPlayed ? 'flex' : 'none';
+      video.onended = finishIntro;
+      showAvatarPlay(false);
+      setLandingCTA('playing');
+
+      const tryPlay = video.play();
+      if (tryPlay && typeof tryPlay.then === 'function') {
+        tryPlay.then(() => {
+          showAvatarPlay(false);
+        }).catch(() => {
+          video.pause();
+          try { video.currentTime = 0; } catch (_) {}
+          video.muted = true;
+          video.loop = false;
+          video.classList.remove('speaking');
+          state.speaking = false;
+          document.getElementById('btnSkip').style.display = 'none';
+          showAvatarPlay(true);
+          setLandingCTA('ready');
+        });
+      }
+    }
+
+    function stopSpeak() {
+      document.querySelectorAll('video.avatar').forEach(v => {
+        try { v.pause(); } catch (_) {}
+        v.classList.remove('speaking');
+      });
+      const av = document.getElementById('avatar');
+      if (av && state.step > 0) startSilentLoop(av);
+      state.speaking = false;
+      document.getElementById('btnSkip').style.display = 'none';
+      showZonePlay(false);
+      if (window.speechSynthesis) speechSynthesis.cancel();
+    }
+
+    // speak() เหลือไว้เผื่อโค้ดเดิมเรียก — ไม่เล่น TTS แล้ว (ใช้เสียงวิดีโอ + พูดสด)
+    function speak(_text, onEnd) {
+      ensureAvatarPlaying();
+      if (onEnd) setTimeout(onEnd, 300);
+    }
+
+    // ===================== RENDER HELPERS =====================
+    const content = document.getElementById('content');
+    const bottomBar = document.getElementById('bottomBar');
+    const btnNext = document.getElementById('btnNext');
+
+    function setProgress(step) {
+      const pct = Math.round((step / TOTAL_STEPS) * 100);
+      document.getElementById('progressFill').style.width = pct + '%';
+      document.getElementById('stepLabel').textContent = `ขั้นตอน ${step}/${TOTAL_STEPS}`;
+      document.getElementById('percentLabel').textContent = pct + '%';
+    }
+
+    function showBottom(label = 'ไปต่อ →', onClick) {
+      bottomBar.classList.add('show');
+      btnNext.textContent = label;
+      btnNext.onclick = onClick;
+    }
+    function hideBottom() {
+      bottomBar.classList.remove('show');
+    }
+
+    // ===================== STEPS =====================
+    const steps = [
+      // 0: LANDING
+      {
+        id: 'landing',
+        render() {
+          document.getElementById('progressWrap').style.display = 'none';
+          document.getElementById('avatarZone').style.display = 'none';
+          content.innerHTML = `
+            <div class="card" style="margin-top:40px; text-align:center; padding:28px 20px;">
+              <div class="avatar-container landing-avatar has-play" style="margin:0 auto 28px;">
+                <video
+                  id="landingAvatar"
+                  class="avatar"
+                  style="width:160px;height:160px;"
+                  src="avatar.mp4"
+                  poster="avatar.jpg"
+                  playsinline
+                  webkit-playsinline
+                  disablepictureinpicture
+                  aria-label="นักวิเคราะห์แผน AI"
+                ></video>
+                <button type="button" class="avatar-play show" id="tapSoundBtn" aria-label="เล่นคลิปนักวิเคราะห์แผน">
+                  <span class="avatar-play-circle" aria-hidden="true">
+                    <span class="avatar-play-triangle"></span>
+                  </span>
+                </button>
+                <div class="avatar-play-hint">กดเล่น · ฟังนักวิเคราะห์แผน</div>
+              </div>
+              <div class="hook-title">แผนชีวิต ในวันที่ AI เปลี่ยนงาน</div>
+              <div class="hook-sub">คุยไป คลิกไป · ประมาณ 5 นาที · ไม่ขายของ</div>
+              <p style="font-size:15px; color:var(--text-dim); margin:16px 0 24px; line-height:1.6;">
+                หลายคนกลัว AI แย่งงาน<br>
+                <strong style="color:var(--gold);">แต่น่ากลัวกว่าคือ<br>เรายังวางแผนเหมือนโลกไม่เคยเปลี่ยน</strong>
+              </p>
+              <div style="background:var(--speech-bg); border:1px solid var(--speech-border); border-radius:12px; padding:12px; margin-bottom:20px; font-size:13px; text-align:left;">
+                ✅ งานเปลี่ยนได้ · ภาระชีวิตมักไม่ลด<br>
+                ✅ ดูแผนชีวิตแบบง่ายๆ ไม่ใช่คลาสเรียน<br>
+                ✅ จบแล้วรู้ว่า “ตรงไหนที่ควรดูก่อน”
+              </div>
+              <button class="btn primary w-full" id="startBtn">เริ่มดูกัน 🚀</button>
+              <p style="font-size:11px; color:var(--text-dim); margin-top:16px;">ข้อมูลอยู่แค่ในเครื่อง · ไม่เก็บที่ไหน</p>
+            </div>
+          `;
+          const landingVid = document.getElementById('landingAvatar');
+          // โชว์เฟรมแรก + Play · เริ่มดูกัน = เล่นวิดีโอ (ยังไม่ข้ามหน้า)
+          landingVid.pause();
+          try { landingVid.currentTime = 0.1; } catch (_) {}
+          showAvatarPlay(true);
+          setLandingCTA('ready');
+          // ถ้าเคยฟังจบแล้ว (ย้อนกลับมา) โชว์ปุ่มข้ามได้
+          document.getElementById('btnSkip').style.display = state.introPlayed ? 'flex' : 'none';
+
+          const startIntro = () => playLandingVoice(landingVid);
+          document.getElementById('startBtn').onclick = startIntro;
+          document.getElementById('tapSoundBtn').onclick = startIntro;
+          landingVid.addEventListener('click', () => {
+            if (document.getElementById('tapSoundBtn')?.classList.contains('show')) startIntro();
+          });
+        }
+      },
+
+      // 1: AGE
+      {
+        id: 'age',
+        render() {
+          document.getElementById('progressWrap').style.display = 'block';
+          document.getElementById('avatarZone').style.display = 'flex';
+          setProgress(1);
+          content.innerHTML = `
+            <div class="speech-bubble" id="speech">
+              เริ่มจากเรื่องใกล้ตัวก่อนนะครับ — งานอาจเปลี่ยนได้จาก AI หรืออย่างอื่น แต่ก่อนอื่น ขอรู้ว่าวันนี้คุณอายุเท่าไหร่
+            </div>
+            <div class="listen-hint">🎧 ฟังนักวิเคราะห์แผนก่อน · เดี๋ยวจะมีให้เลือกอายุ</div>
+            <div class="step-actions is-hidden">
+              <div class="card">
+                <div class="question">คุณอายุเท่าไหร่ครับ?</div>
+                <div class="age-display" id="ageVal">${state.answers.age}</div>
+                <div class="slider-wrap">
+                  <input type="range" min="20" max="70" value="${state.answers.age}" id="ageSlider" />
+                  <div class="slider-label"><span>20</span><span>70</span></div>
+                </div>
+                <div class="hint">เลื่อนเพื่อเลือก · ไม่ต้องพิมพ์</div>
+              </div>
+            </div>
+          `;
+          gateStepWithClip(1, {
+            nextLabel: 'ต่อไป · เป้าหมายเกษียณ',
+            onNext: () => goTo(2),
+            wireActions: () => {
+              const slider = document.getElementById('ageSlider');
+              const val = document.getElementById('ageVal');
+              if (!slider) return;
+              slider.oninput = () => {
+                state.answers.age = +slider.value;
+                val.textContent = slider.value;
+              };
+            }
+          });
+        }
+      },
+
+      // 2: RETIREMENT VISION
+      {
+        id: 'retire',
+        render() {
+          document.getElementById('avatarZone').style.display = 'flex';
+          setProgress(2);
+          const a = state.answers;
+          content.innerHTML = `
+            <div class="speech-bubble">
+              ต่อไปเรื่องเกษียณแบบง่ายๆ — อยากหยุดงานตอนอายุเท่าไหร่ และอยากใช้เดือนละเท่าไหร่ เลือกใกล้ๆ ได้เลยครับ
+            </div>
+            <div class="listen-hint">🎧 ฟังนักวิเคราะห์แผนก่อน · เดี๋ยวจะมีให้เลือกอายุเกษียณและค่าใช้จ่าย</div>
+            <div class="step-actions is-hidden">
+              <div class="card">
+                <div class="question">คุณอยากเกษียณตอนอายุเท่าไหร่?</div>
+                <div class="age-display" id="retireAgeVal">${a.retireAge}</div>
+                <div class="slider-wrap">
+                  <input type="range" min="35" max="75" step="1" value="${a.retireAge}" id="retireAgeSlider" />
+                  <div class="slider-label"><span>35</span><span>75</span></div>
+                </div>
+                <div class="hint">เลื่อนเพื่อเลือก · ไม่ต้องพิมพ์</div>
+              </div>
+              <div class="card">
+                <div class="question">หลังเกษียณ อยากใช้เดือนละเท่าไหร่?</div>
+                <div class="slider-value" id="spendVal">${fmt(a.monthlySpend)} บาท</div>
+                <input type="range" min="3000" max="200000" step="1000" value="${Math.min(200000, Math.max(3000, a.monthlySpend))}" id="spendSlider" />
+                <div class="slider-label"><span>3 พัน</span><span>2 แสน</span></div>
+                <div class="hint">ยังไม่ต้องเป๊ะ · เลือกใกล้ๆ ได้เลย</div>
+              </div>
+            </div>
+          `;
+          gateStepWithClip(2, {
+            nextLabel: 'คำนวณเงินที่ต้องเตรียม',
+            onNext: () => goTo(3),
+            wireActions: () => {
+              const ageSlider = document.getElementById('retireAgeSlider');
+              const ageVal = document.getElementById('retireAgeVal');
+              if (ageSlider && ageVal) {
+                ageSlider.oninput = () => {
+                  state.answers.retireAge = +ageSlider.value;
+                  ageVal.textContent = ageSlider.value;
+                };
+              }
+              const s = document.getElementById('spendSlider');
+              if (!s) return;
+              s.oninput = () => {
+                state.answers.monthlySpend = +s.value;
+                document.getElementById('spendVal').textContent = fmt(+s.value) + ' บาท';
+              };
+            }
+          });
+        }
+      },
+
+      // 3: CALC + PREPARED
+      {
+        id: 'calc',
+        render() {
+          document.getElementById('avatarZone').style.display = 'flex';
+          setProgress(3);
+          const a = state.answers;
+          const years = Math.max(a.retireAge - a.age, 5);
+          const postYears = 30;
+          const totalNeed = a.monthlySpend * 12 * postYears;
+          state.answers._totalNeed = totalNeed;
+          state.answers._yearsLeft = years;
+
+          content.innerHTML = `
+            <div class="speech-bubble">
+              ตัวเลขนี้คือเป้าหมายคร่าวๆ นะครับ ยังไม่ต้องตกใจ — วันนี้เตรียมไว้แล้วเท่าไหร่ เลื่อนได้เลย แล้วเราจะดูช่องว่างด้วยกัน
+            </div>
+            <div class="listen-hint">🎧 ฟังนักวิเคราะห์แผนก่อน · เดี๋ยวจะมีตัวเลขและให้เลื่อนเงินที่เตรียมไว้</div>
+            <div class="step-actions is-hidden">
+              <div class="card center">
+                <div class="big-label">เงินที่ควรมีตอนเกษียณ (คร่าวๆ)</div>
+                <div class="big-number">${fmtM(totalNeed)}</div>
+                <div class="hint">คำนวณจาก ${fmt(a.monthlySpend)} × 12 × 30 ปี</div>
+              </div>
+              <div class="card">
+                <div class="question">วันนี้คุณเตรียมไว้แล้วเท่าไหร่?</div>
+                <div class="slider-value" id="prepVal">${a.prepared === 0 ? '0 บาท' : fmtB(a.prepared)}</div>
+                <input type="range" min="0" max="${PREP_SLIDER_MAX}" step="1" value="${sliderFromPrepared(a.prepared)}" id="prepSlider" />
+                <div class="slider-label"><span>0 บาท</span><span>20 ล้าน</span></div>
+                <div class="hint mt-8">ช่วงต้นทีละพัน · เลื่อนดูตัวเลข ไม่ต้องกังวล แค่สำรวจ</div>
+              </div>
+              <div class="card" id="gapCard" style="display:none; border-color:rgba(239,68,68,0.4);">
+                <div class="center">
+                  <div class="big-label" style="color:#fca5a5;">ยังขาดอีกประมาณ</div>
+                  <div class="big-number" style="font-size:32px;" id="gapVal">0</div>
+                </div>
+              </div>
+            </div>
+          `;
+          gateStepWithClip(3, {
+            nextLabel: 'ต่อไป · ครอบครัว',
+            onNext: () => goTo(4),
+            wireActions: () => {
+              const ps = document.getElementById('prepSlider');
+              if (!ps) return;
+              const updateGap = () => {
+                const amount = preparedFromSlider(+ps.value);
+                state.answers.prepared = amount;
+                document.getElementById('prepVal').textContent =
+                  amount === 0 ? '0 บาท' : fmtB(amount);
+                const gap = Math.max(totalNeed - amount, 0);
+                document.getElementById('gapVal').textContent = fmtM(gap);
+                document.getElementById('gapCard').style.display = gap > 0 ? 'block' : 'none';
+              };
+              ps.oninput = updateGap;
+              updateGap();
+            }
+          });
+        }
+      },
+
+      // 4: FAMILY
+      {
+        id: 'family',
+        render() {
+          document.getElementById('avatarZone').style.display = 'flex';
+          setProgress(4);
+          content.innerHTML = `
+            <div class="speech-bubble">
+              งานอาจเปลี่ยนได้ แต่หลายคนยังมีคนที่ต้องดูแล — พ่อแม่ คู่ครอง หรือลูก วันนี้คุณดูแลใครอยู่บ้างครับ
+            </div>
+            <div class="listen-hint">🎧 ฟังนักวิเคราะห์แผนก่อน · เดี๋ยวจะมีให้เลือกคนที่ต้องดูแล</div>
+            <div class="step-actions is-hidden">
+              <div class="card">
+                <div class="question">วันนี้คุณดูแลใครอยู่บ้าง?</div>
+                <div class="hint">เลือกได้หลายข้อ</div>
+                <div class="chips" id="careChips">
+                  <div class="chip" data-v="parents">พ่อแม่ / ปู่ย่าตายาย</div>
+                  <div class="chip" data-v="spouse">คู่ครอง</div>
+                  <div class="chip" data-v="kids">บุตร</div>
+                  <div class="chip" data-v="none">ยังไม่มีภาระ</div>
+                </div>
+              </div>
+              <div class="card hidden" id="kidsCard">
+                <div class="question">มีบุตรกี่คน?</div>
+                <div class="btn-grid three" id="kidsBtns">
+                  ${[1,2,3,4].map(n => `<button class="btn" data-n="${n}">${n} คน</button>`).join('')}
+                </div>
+                <div class="mt-16">
+                  <div class="question" style="font-size:15px;">วางแผนให้เรียนจบระดับไหน?</div>
+                  <div class="btn-grid" id="eduBtns">
+                    <button class="btn selected" data-e="bachelor">ปริญญาตรี</button>
+                    <button class="btn" data-e="master">ปริญญาโท</button>
+                    <button class="btn" data-e="intl">ต่างประเทศ</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          `;
+          gateStepWithClip(4, {
+            nextLabel: 'ต่อไป · เป้าหมายชีวิต',
+            onNext: () => goTo(5),
+            wireActions: () => {
+              const chips = document.querySelectorAll('#careChips .chip');
+              chips.forEach(c => {
+                c.onclick = () => {
+                  if (c.dataset.v === 'none') {
+                    chips.forEach(x => x.classList.remove('selected'));
+                    c.classList.add('selected');
+                    state.answers.careParents = false;
+                    state.answers.hasSpouse = false;
+                    state.answers.kids = 0;
+                    document.getElementById('kidsCard').classList.add('hidden');
+                  } else {
+                    document.querySelector('[data-v="none"]').classList.remove('selected');
+                    c.classList.toggle('selected');
+                    state.answers.careParents = !!document.querySelector('[data-v="parents"].selected');
+                    state.answers.hasSpouse = !!document.querySelector('[data-v="spouse"].selected');
+                    const hasKids = !!document.querySelector('[data-v="kids"].selected');
+                    document.getElementById('kidsCard').classList.toggle('hidden', !hasKids);
+                    if (!hasKids) state.answers.kids = 0;
+                  }
+                };
+              });
+              document.querySelectorAll('#kidsBtns .btn').forEach(b => {
+                b.onclick = () => {
+                  document.querySelectorAll('#kidsBtns .btn').forEach(x => x.classList.remove('selected'));
+                  b.classList.add('selected');
+                  state.answers.kids = +b.dataset.n;
+                };
+              });
+              document.querySelectorAll('#eduBtns .btn').forEach(b => {
+                b.onclick = () => {
+                  document.querySelectorAll('#eduBtns .btn').forEach(x => x.classList.remove('selected'));
+                  b.classList.add('selected');
+                  state.answers.eduGoal = b.dataset.e;
+                };
+              });
+            }
+          });
+        }
+      },
+
+      // 5: GOALS
+      {
+        id: 'goals',
+        render() {
+          document.getElementById('avatarZone').style.display = 'flex';
+          setProgress(5);
+          content.innerHTML = `
+            <div class="speech-bubble">
+              แม้ AI จะทำให้โลกงานเปลี่ยน เป้าหมายชีวิตก็ยังมี — บ้าน รถ ลูก ธุรกิจ หรืออิสรภาพการเงิน เลือกสิ่งที่อยากทำให้สำเร็จได้เลยครับ
+            </div>
+            <div class="listen-hint">🎧 ฟังนักวิเคราะห์แผนก่อน · เดี๋ยวจะมีให้เลือกเป้าหมาย</div>
+            <div class="step-actions is-hidden">
+              <div class="card">
+                <div class="question">เป้าหมายในชีวิตที่คุณอยากทำให้สำเร็จ?</div>
+                <div class="hint">เลือกได้หลายข้อ · กดอีกทีเพื่อยกเลิก</div>
+                <div class="chips" id="goalChips">
+                  ${[
+                    ['house','🏠 ซื้อบ้าน / ดาวน์บ้าน'],
+                    ['car','🚗 ซื้อรถใหม่'],
+                    ['travel','✈️ ท่องเที่ยวต่างประเทศ'],
+                    ['business','💼 เริ่มธุรกิจ'],
+                    ['kids','👶 มีบุตร / ขยายครอบครัว'],
+                    ['edu','📚 เรียนต่อ / อัพสกิล'],
+                    ['retireEarly','🌴 เกษียณเร็ว'],
+                    ['freedom','🕊 มีอิสรภาพทางการเงิน']
+                  ].map(([v,t]) => `<div class="chip" data-v="${v}">${t}</div>`).join('')}
+                </div>
+              </div>
+            </div>
+          `;
+          gateStepWithClip(5, {
+            nextLabel: 'ต่อไป · ความเสี่ยง',
+            onNext: () => goTo(6),
+            wireActions: () => {
+              document.querySelectorAll('#goalChips .chip').forEach(c => {
+                c.onclick = () => {
+                  c.classList.toggle('selected');
+                  state.answers.goals = [...document.querySelectorAll('#goalChips .chip.selected')].map(x => x.dataset.v);
+                };
+              });
+            }
+          });
+        }
+      },
+
+      // 6: RISKS
+      {
+        id: 'risks',
+        render() {
+          document.getElementById('avatarZone').style.display = 'flex';
+          setProgress(6);
+          content.innerHTML = `
+            <div class="speech-bubble">
+              แผนจะสวยแค่ไหน ถ้ามีความเสี่ยงเข้ามาก็อาจสะดุด — เจ็บป่วย รายได้ เศรษฐกิจ หรืองานเปลี่ยนจาก AI คุณกังวลเรื่องไหนเป็นพิเศษครับ
+            </div>
+            <div class="listen-hint">🎧 ฟังนักวิเคราะห์แผนก่อน · เดี๋ยวจะมีให้เลือกความเสี่ยง</div>
+            <div class="step-actions is-hidden">
+              <div class="card">
+                <div class="question">อะไรที่คุณคิดว่าเป็นความเสี่ยงต่อแผนการเงินของคุณ?</div>
+                <div class="chips" id="riskChips">
+                  ${[
+                    ['illness','🤒 เจ็บป่วย / โรคร้าย'],
+                    ['job','💼 ตกงาน / รายได้หาย'],
+                    ['economy','📉 เศรษฐกิจไม่ดี'],
+                    ['tech','🤖 AI / เทคโนโลยี disrupt'],
+                    ['accident','🚗 อุบัติเหตุ'],
+                    ['family','👨‍👩‍👧 เหตุการณ์ครอบครัว'],
+                    ['inflation','💸 เงินเฟ้อ'],
+                    ['none','😌 ยังไม่ค่อยกังวล']
+                  ].map(([v,t]) => `<div class="chip" data-v="${v}">${t}</div>`).join('')}
+                </div>
+              </div>
+            </div>
+          `;
+          gateStepWithClip(6, {
+            nextLabel: 'ดูพีระมิดการเงิน',
+            onNext: () => goTo(7),
+            wireActions: () => {
+              document.querySelectorAll('#riskChips .chip').forEach(c => {
+                c.onclick = () => {
+                  if (c.dataset.v === 'none') {
+                    document.querySelectorAll('#riskChips .chip').forEach(x => x.classList.remove('selected'));
+                    c.classList.add('selected');
+                  } else {
+                    document.querySelector('[data-v="none"]')?.classList.remove('selected');
+                    c.classList.toggle('selected');
+                  }
+                  state.answers.risks = [...document.querySelectorAll('#riskChips .chip.selected')].map(x => x.dataset.v);
+                };
+              });
+            }
+          });
+        }
+      },
+
+      // 7: PYRAMID INTRO (โครงตาม Assure Wealth · ภาษาคน)
+      {
+        id: 'pyramid',
+        render() {
+          document.getElementById('avatarZone').style.display = 'flex';
+          setProgress(7);
+          content.innerHTML = `
+            <div class="speech-bubble">
+              งานเปลี่ยนได้ AI ก็มี รายได้สะดุดได้ — เลยต้องมีฐานแน่นก่อน เงินฉุกเฉิน + บริหารความเสี่ยง แล้วค่อยออมและลงทุน
+            </div>
+            <div class="listen-hint">🎧 ฟังนักวิเคราะห์แผนก่อน · เดี๋ยวจะมีพีระมิดและให้ใส่รายจ่าย</div>
+            <div class="step-actions is-hidden">
+              <div class="card">
+                <div class="question">พีระมิดการเงิน</div>
+                ${pyramidHTML()}
+                <p class="hint center">สร้างจากฐานขึ้นไป · ไม่วิ่งไปลงทุนก่อน</p>
+              </div>
+              <div class="card">
+                <div class="question">เดือนนึงคุณใช้จ่ายเท่าไหร่?</div>
+                <p style="font-size:14px; color:var(--text-dim); text-align:center; margin-bottom:12px;">
+                  ใช้คำนวณเงินฉุกเฉินคร่าวๆ · 3–6 เท่าของค่าใช้จ่ายต่อเดือน
+                </p>
+                <div class="slider-value" id="expVal">${fmt(state.answers.monthlyExpense)} บาท</div>
+                <input type="range" min="10000" max="200000" step="5000" value="${state.answers.monthlyExpense}" id="expSlider" />
+                <div class="slider-label"><span>1 หมื่น</span><span>2 แสน</span></div>
+              </div>
+            </div>
+          `;
+          gateStepWithClip(7, {
+            nextLabel: 'คำนวณเงินสำรอง',
+            onNext: () => goTo(8),
+            wireActions: () => {
+              setTimeout(animatePyramid, 200);
+              const es = document.getElementById('expSlider');
+              if (!es) return;
+              es.oninput = () => {
+                state.answers.monthlyExpense = +es.value;
+                document.getElementById('expVal').textContent = fmt(+es.value) + ' บาท';
+              };
+            }
+          });
+        }
+      },
+
+      // 8: EMERGENCY FUND + บริหารความเสี่ยง
+      {
+        id: 'ef',
+        render() {
+          document.getElementById('avatarZone').style.display = 'flex';
+          setProgress(8);
+          const a = state.answers;
+          const rec3 = a.monthlyExpense * 3;
+          const rec6 = a.monthlyExpense * 6;
+          content.innerHTML = `
+            <div class="speech-bubble">
+              เงินฉุกเฉินที่ควรมีประมาณ ${fmtM(rec3)} – ${fmtM(rec6)} · ตอนนี้คุณมีเท่าไหร่ และบริหารความเสี่ยงด้วยประกันไว้หรือยัง
+            </div>
+            <div class="listen-hint">🎧 ฟังนักวิเคราะห์แผนก่อน · เดี๋ยวจะมีตัวเลขและให้เลือกประกัน</div>
+            <div class="step-actions is-hidden">
+              <div class="card center">
+                <div class="big-label">แนะนำเงินสำรอง</div>
+                <div class="big-number" style="font-size:28px;">${fmtM(rec3)} – ${fmtM(rec6)}</div>
+                <div class="hint">3 เดือน ถึง 6 เดือนของรายจ่าย</div>
+              </div>
+              <div class="card">
+                <div class="question">ตอนนี้คุณมีเงินสำรองก้อนนี้อยู่เท่าไหร่?</div>
+                <div class="slider-value" id="efVal">${fmtM(a.efAmount)}</div>
+                <input type="range" min="0" max="3000000" step="50000" value="${a.efAmount}" id="efSlider" />
+                <div class="slider-label"><span>0</span><span>3 ล้าน</span></div>
+              </div>
+              <div class="card">
+                <div class="question">บริหารความเสี่ยง · มีประกันเหล่านี้หรือยัง?</div>
+                <p class="hint center" style="margin-bottom:12px;">เผื่องานเปลี่ยนหรือเกิดเหตุไม่คาดคิด</p>
+                <div class="result-grid" id="insGrid">
+                  ${[
+                    ['hasHealth','ประกันสุขภาพ / โรคร้ายแรง'],
+                    ['hasLife','ประกันชีวิต'],
+                    ['hasCI','ประกันโรคร้ายแรง (CI)'],
+                    ['hasAccident','ประกันอุบัติเหตุ']
+                  ].map(([k,label]) => `
+                    <div class="result-item">
+                      <span class="label">${label}</span>
+                      <div class="flex gap-8">
+                        <button class="btn" style="padding:6px 14px; font-size:13px;" data-k="${k}" data-v="yes">มี</button>
+                        <button class="btn" style="padding:6px 14px; font-size:13px;" data-k="${k}" data-v="no">ยัง</button>
+                      </div>
+                    </div>
+                  `).join('')}
+                </div>
+              </div>
+            </div>
+          `;
+          gateStepWithClip(8, {
+            nextLabel: 'ต่อไป · ออม & ลงทุน',
+            onNext: () => goTo(9),
+            wireActions: () => {
+              const efs = document.getElementById('efSlider');
+              if (efs) {
+                efs.oninput = () => {
+                  state.answers.efAmount = +efs.value;
+                  document.getElementById('efVal').textContent = fmtM(+efs.value);
+                };
+              }
+              document.querySelectorAll('#insGrid .btn').forEach(b => {
+                b.onclick = () => {
+                  const k = b.dataset.k;
+                  const v = b.dataset.v === 'yes';
+                  b.parentElement.querySelectorAll('.btn').forEach(x => x.classList.remove('selected'));
+                  b.classList.add('selected');
+                  state.answers[k] = v;
+                };
+              });
+            }
+          });
+        }
+      },
+
+      // 9: SAVE + INVEST + LEGACY (recap พีระมิด + ชั้นบน)
+      {
+        id: 'saveinvest',
+        render() {
+          document.getElementById('avatarZone').style.display = 'flex';
+          setProgress(9);
+          content.innerHTML = `
+            <div class="speech-bubble">
+              พอฐานแน่นแล้ว ค่อยขึ้นชั้นถัดไป — ออมและลงทุน · ส่วนชั้นบนสุดคือส่งต่อให้คนที่รัก ถ้ายังไม่พร้อม เลือกยังไม่คิดก็ได้ครับ
+            </div>
+            <div class="card" id="pyramidRecapCard">
+              <div class="question">พีระมิดการเงิน · ทบทวน</div>
+              ${pyramidHTML({ highlight: { l2: true, l3: true, l4: true } })}
+              <p class="hint center">ชั้นกลาง–บน · ออม · ลงทุน · ส่งต่อ</p>
+            </div>
+            <div class="listen-hint">🎧 ฟังนักวิเคราะห์แผนก่อน · เดี๋ยวจะมีให้เลือก</div>
+            <div class="step-actions is-hidden">
+              <div class="card">
+                <div class="question">ชั้นกลาง · รับความเสี่ยงในการลงทุนได้แค่ไหน?</div>
+                <div class="btn-grid" id="riskTol">
+                  <button class="btn" data-r="low">ต่ำ<br><small style="font-weight:400;opacity:0.7">เน้นปลอดภัย</small></button>
+                  <button class="btn selected" data-r="medium">ปานกลาง<br><small style="font-weight:400;opacity:0.7">สมดุล</small></button>
+                  <button class="btn" data-r="high">สูง<br><small style="font-weight:400;opacity:0.7">โตเร็ว</small></button>
+                </div>
+              </div>
+              <div class="card">
+                <div class="question">ชั้นบนสุด · สนใจส่งต่อให้คนที่รักไหม?</div>
+                <p class="hint center" style="margin-bottom:10px;">ยอดพีระมิด · ยังไม่พร้อมก็ได้</p>
+                <div class="btn-grid" id="legacy">
+                  <button class="btn" data-l="yes">สนใจ · อยากวางแผน</button>
+                  <button class="btn" data-l="no">ยังไม่คิดตอนนี้</button>
+                </div>
+              </div>
+            </div>
+          `;
+          // โชว์พีระมิดทันทีตอนฟังคลิป (recap)
+          setTimeout(animatePyramid, 250);
+          gateStepWithClip(9, {
+            nextLabel: 'ดูสรุปแผนชีวิต',
+            onNext: () => goTo(10),
+            wireActions: () => {
+              document.querySelectorAll('#riskTol .btn').forEach(b => {
+                b.onclick = () => {
+                  document.querySelectorAll('#riskTol .btn').forEach(x => x.classList.remove('selected'));
+                  b.classList.add('selected');
+                  state.answers.riskTol = b.dataset.r;
+                };
+              });
+              document.querySelectorAll('#legacy .btn').forEach(b => {
+                b.onclick = () => {
+                  document.querySelectorAll('#legacy .btn').forEach(x => x.classList.remove('selected'));
+                  b.classList.add('selected');
+                  state.answers.legacy = b.dataset.l === 'yes';
+                };
+              });
+            }
+          });
+        }
+      },
+
+      // 10: SUMMARY — ชี้ปัญหา + วิธีแก้ (แบบนาทีท้ายคลิปครู)
+      {
+        id: 'summary',
+        render() {
+          document.getElementById('avatarZone').style.display = 'flex';
+          setProgress(10);
+          const a = state.answers;
+          const plan = buildPriorityPlan(a);
+          const retireGap = Math.max((a._totalNeed || 0) - (a.prepared || 0), 0);
+          const efNeed3 = a.monthlyExpense * 3;
+          const efGap = Math.max(efNeed3 - (a.efAmount || 0), 0);
+          const riskText = (a.risks || [])
+            .filter(r => r !== 'none')
+            .slice(0, 2)
+            .map(r => RISK_LABEL[r] || r)
+            .join(' · ') || 'ยังไม่ระบุ';
+
+          // highlight ชั้นพีระมิดตามปัญหา
+          const hi = {
+            ef: { l1a: true },
+            risk: { l1b: true },
+            income: { l1b: true },
+            kids: { l2: true },
+            retire: { l2: true, l3: true },
+            invest: { l2: true, l3: true }
+          }[plan.id] || { l1a: true };
+
+          content.innerHTML = `
+            <div class="speech-bubble">
+              วันนี้ไม่ได้แก้ทุกเรื่องในรอบเดียว — งานกับ AI อาจเปลี่ยนได้ แต่เห็นแล้วว่าเป้าหมายอยู่ตรงไหน ฐานตรงไหนมีแล้ว และ<strong style="color:var(--gold)">ตรงไหนที่ควรดูก่อน</strong>
+            </div>
+            <div class="listen-hint">🎧 ฟังนักวิเคราะห์แผนก่อน · เดี๋ยวจะโชว์สรุปและวิธีทำต่อ</div>
+
+            <div class="step-actions is-hidden">
+              <div class="priority">
+                <div class="priority-title">ตรงที่ควรดูก่อน</div>
+                <div class="priority-main">${plan.title}</div>
+                <div class="priority-gap">${plan.gap}</div>
+                <div style="font-size:13px; color:var(--text-dim); margin-top:8px; line-height:1.5;">${plan.reason}</div>
+              </div>
+
+              <div class="solve-card">
+                <h3>ถ้าปัญหานี้ · ทำยังไงต่อ</h3>
+                <ol class="solve-steps">
+                  ${plan.steps.map((s, i) => `
+                    <li><span class="solve-num">${i + 1}</span><span>${s}</span></li>
+                  `).join('')}
+                </ol>
+              </div>
+
+              <div class="card">
+                <div class="question" style="font-size:15px; margin-bottom:8px;">พีระมิดของคุณ · โฟกัสชั้นนี้</div>
+                ${pyramidHTML({ highlight: hi })}
+              </div>
+
+              <div class="metric-row">
+                <div class="metric-box">
+                  <div class="m-label">ช่องว่างเกษียณ</div>
+                  <div class="m-val">${fmtM(retireGap)}</div>
+                </div>
+                <div class="metric-box">
+                  <div class="m-label">เงินฉุกเฉินขาด</div>
+                  <div class="m-val">${fmtM(efGap)}</div>
+                </div>
+                <div class="metric-box">
+                  <div class="m-label">ความเสี่ยงหลัก</div>
+                  <div class="m-val" style="font-size:11px;">${riskText}</div>
+                </div>
+              </div>
+
+              <p class="close-q">ถ้างานหรือรายได้สะดุด 6–12 เดือน<br>(รวมถึงโลกที่ AI เข้ามามากขึ้น)<br>อะไรจะกระทบคุณก่อน?</p>
+
+              <div class="card">
+                <div class="question" style="font-size:14px; margin-bottom:6px;">คุณจะทำต่อยังไง (เก็บไว้เตือนตัวเอง)</div>
+                <div class="path-chips" id="pathChips">
+                  <button type="button" class="path-chip" data-path="wait">
+                    ยังไม่ทำอะไรตอนนี้
+                    <small>แค่รู้ภาพรวมก่อน</small>
+                  </button>
+                  <button type="button" class="path-chip selected" data-path="fix">
+                    เริ่มจากจุดที่สำคัญที่สุดก่อน
+                    <small>โฟกัส «${plan.title}»</small>
+                  </button>
+                  <button type="button" class="path-chip" data-path="self">
+                    ค่อยๆ ทำตามแผนเอง
+                    <small>ทบทวนเป็นระยะ · ไม่เร่ง</small>
+                  </button>
+                </div>
+              </div>
+
+              <div class="final-cta">
+                <div style="font-size:15px; font-weight:700; margin-bottom:6px;">เก็บผลนี้ไว้ดูเอง</div>
+                <p style="font-size:13px; color:var(--text-dim); margin-bottom:14px; line-height:1.5;">
+                  สร้างการ์ดสรุปเป็นรูปสวยๆ · บันทึกหรือแชร์เก็บในเครื่องได้
+                </p>
+                <div id="sharePreviewWrap" style="display:none; margin-bottom:12px;">
+                  <img id="sharePreview" alt="ตัวอย่างการ์ดสรุป" style="width:100%; border-radius:14px; border:1px solid rgba(255,255,255,0.12); display:block;" />
+                </div>
+                <button class="btn primary w-full" id="saveCardBtn">บันทึกรูปสรุป</button>
+                <button class="btn w-full mt-8" id="shareBtn" style="border-color:var(--speech-border); color:var(--gold);">แชร์รูป / ข้อความ</button>
+                <button class="btn ghost w-full mt-8" id="restartBtn">เริ่มสำรวจใหม่</button>
+                <p id="shareStatus" style="font-size:12px; color:var(--success); margin-top:10px; min-height:1.2em;"></p>
+              </div>
+            </div>
+          `;
+
+          const pathLabelOf = () => ({
+            wait: 'ยังไม่ทำอะไรตอนนี้',
+            fix: 'เริ่มจากจุดที่สำคัญที่สุดก่อน',
+            self: 'ค่อยๆ ทำตามแผนเอง'
+          }[state.answers.nextPath || 'fix'] || '');
+
+          const buildShareText = () => [
+            'สรุปแผนชีวิต · นักวิเคราะห์แผน AI',
+            '——————————',
+            'ตรงที่ควรดูก่อน: ' + plan.title,
+            plan.gap,
+            plan.reason,
+            '',
+            'ทำต่อยังไง:',
+            ...plan.steps.map((s, i) => (i + 1) + ') ' + s),
+            '',
+            'ช่องว่างเกษียณ: ' + fmtM(retireGap),
+            'เงินฉุกเฉินขาด: ' + fmtM(efGap),
+            'ความเสี่ยงหลัก: ' + riskText,
+            'ทางที่เลือก: ' + pathLabelOf(),
+            '',
+            'อายุ ' + a.age + ' · เกษียณ ' + a.retireAge + ' · ใช้ ' + fmt(a.monthlySpend) + ' บาท/เดือน',
+            '——————————',
+            'เก็บไว้ทบทวนเอง'
+          ].join('\n');
+
+          /** วาดการ์ดสรุปสวยๆ เป็น PNG (ตามธีมปัจจุบัน) */
+          const makeShareCard = () => {
+            const W = 1080;
+            const H = 1680;
+            const canvas = document.createElement('canvas');
+            canvas.width = W;
+            canvas.height = H;
+            const ctx = canvas.getContext('2d');
+            const cs = getComputedStyle(document.documentElement);
+            const brand = (cs.getPropertyValue('--gold') || '#d31145').trim();
+            const brandDim = (cs.getPropertyValue('--gold-dim') || '#a50e36').trim();
+            const text = (cs.getPropertyValue('--text') || '#1d1d1f').trim();
+            const textDim = (cs.getPropertyValue('--text-dim') || '#6b7280').trim();
+            const theme = document.documentElement.getAttribute('data-theme') || 'aia';
+            const isAia = theme !== 'classic';
+
+            // background
+            const bg = ctx.createLinearGradient(0, 0, W, H);
+            if (isAia) {
+              bg.addColorStop(0, '#ffffff');
+              bg.addColorStop(0.55, '#f7f7f8');
+              bg.addColorStop(1, '#f0f1f3');
+            } else {
+              bg.addColorStop(0, '#0b0f1a');
+              bg.addColorStop(0.45, '#121a2e');
+              bg.addColorStop(1, '#0a1628');
+            }
+            ctx.fillStyle = bg;
+            ctx.fillRect(0, 0, W, H);
+
+            // glow orbs
+            const orb = (x, y, r, c) => {
+              const g = ctx.createRadialGradient(x, y, 0, x, y, r);
+              g.addColorStop(0, c);
+              g.addColorStop(1, 'rgba(0,0,0,0)');
+              ctx.fillStyle = g;
+              ctx.beginPath();
+              ctx.arc(x, y, r, 0, Math.PI * 2);
+              ctx.fill();
+            };
+            if (isAia) {
+              orb(200, 180, 340, 'rgba(211,17,69,0.12)');
+              orb(900, 500, 360, 'rgba(29,29,31,0.06)');
+              orb(540, 1480, 380, 'rgba(15,118,110,0.08)');
+            } else {
+              orb(180, 160, 320, 'rgba(245,197,24,0.18)');
+              orb(920, 420, 380, 'rgba(0,212,255,0.12)');
+              orb(540, 1500, 400, 'rgba(16,185,129,0.10)');
+            }
+
+            // top accent bar
+            const bar = ctx.createLinearGradient(80, 0, W - 80, 0);
+            bar.addColorStop(0, brand);
+            bar.addColorStop(1, brandDim);
+            ctx.fillStyle = bar;
+            ctx.fillRect(80, 56, W - 160, 6);
+
+            // helper text wrap (Thai-friendly: by char)
+            const wrap = (text, maxW, font) => {
+              ctx.font = font;
+              const lines = [];
+              let line = '';
+              const chars = String(text || '').split('');
+              for (const ch of chars) {
+                const t = line + ch;
+                if (ctx.measureText(t).width > maxW && line) {
+                  lines.push(line);
+                  line = ch;
+                } else line = t;
+              }
+              if (line) lines.push(line);
+              return lines;
+            };
+            const drawLines = (lines, x, y, lh, color, font, align) => {
+              ctx.fillStyle = color;
+              ctx.font = font;
+              ctx.textAlign = align || 'left';
+              lines.forEach((ln, i) => ctx.fillText(ln, x, y + i * lh));
+              return lines.length * lh;
+            };
+            const roundRect = (x, y, w, h, r) => {
+              ctx.beginPath();
+              ctx.moveTo(x + r, y);
+              ctx.arcTo(x + w, y, x + w, y + h, r);
+              ctx.arcTo(x + w, y + h, x, y + h, r);
+              ctx.arcTo(x, y + h, x, y, r);
+              ctx.arcTo(x, y, x + w, y, r);
+              ctx.closePath();
+            };
+
+            // header
+            ctx.textAlign = 'left';
+            ctx.fillStyle = brand;
+            ctx.font = '700 28px "Noto Sans Thai", "Sarabun", sans-serif';
+            ctx.fillText('นักวิเคราะห์แผน AI', 80, 120);
+            ctx.fillStyle = text;
+            ctx.font = '800 56px "Noto Sans Thai", "Sarabun", sans-serif';
+            ctx.fillText('สรุปแผนชีวิตของคุณ', 80, 190);
+            ctx.fillStyle = textDim;
+            ctx.font = '400 26px "Noto Sans Thai", "Sarabun", sans-serif';
+            ctx.fillText('อายุ ' + a.age + ' ปี  ·  เกษียณ ' + a.retireAge + '  ·  ใช้ ' + fmt(a.monthlySpend) + ' บาท/เดือน', 80, 240);
+
+            // priority card
+            let y = 290;
+            roundRect(80, y, W - 160, 280, 28);
+            const pc = ctx.createLinearGradient(80, y, W - 80, y + 280);
+            if (isAia) {
+              pc.addColorStop(0, 'rgba(211,17,69,0.10)');
+              pc.addColorStop(1, 'rgba(29,29,31,0.04)');
+            } else {
+              pc.addColorStop(0, 'rgba(239,68,68,0.22)');
+              pc.addColorStop(1, 'rgba(245,197,24,0.14)');
+            }
+            ctx.fillStyle = pc;
+            ctx.fill();
+            ctx.strokeStyle = isAia ? 'rgba(211,17,69,0.35)' : 'rgba(245,197,24,0.45)';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            ctx.fillStyle = brand;
+            ctx.font = '700 24px "Noto Sans Thai", "Sarabun", sans-serif';
+            ctx.fillText('ตรงที่ควรดูก่อน', 110, y + 50);
+            const titleLines = wrap(plan.title, W - 220, '800 40px "Noto Sans Thai", "Sarabun", sans-serif');
+            drawLines(titleLines, 110, y + 105, 48, text, '800 40px "Noto Sans Thai", "Sarabun", sans-serif');
+            const gapLines = wrap(plan.gap, W - 220, '600 28px "Noto Sans Thai", "Sarabun", sans-serif');
+            drawLines(gapLines, 110, y + 105 + titleLines.length * 48 + 16, 36, brand, '600 28px "Noto Sans Thai", "Sarabun", sans-serif');
+
+            // metrics
+            y = 610;
+            const metrics = [
+              { l: 'ช่องว่างเกษียณ', v: fmtM(retireGap) },
+              { l: 'เงินฉุกเฉินขาด', v: fmtM(efGap) },
+              { l: 'ความเสี่ยงหลัก', v: riskText }
+            ];
+            const mw = (W - 160 - 24) / 3;
+            metrics.forEach((m, i) => {
+              const x = 80 + i * (mw + 12);
+              roundRect(x, y, mw, 150, 20);
+              ctx.fillStyle = isAia ? '#ffffff' : 'rgba(255,255,255,0.06)';
+              ctx.fill();
+              ctx.strokeStyle = isAia ? 'rgba(29,29,31,0.10)' : 'rgba(255,255,255,0.12)';
+              ctx.lineWidth = 1.5;
+              ctx.stroke();
+              ctx.fillStyle = textDim;
+              ctx.font = '600 22px "Noto Sans Thai", "Sarabun", sans-serif';
+              ctx.textAlign = 'center';
+              ctx.fillText(m.l, x + mw / 2, y + 48);
+              const vLines = wrap(m.v, mw - 28, '800 28px "Noto Sans Thai", "Sarabun", sans-serif');
+              drawLines(vLines.slice(0, 2), x + mw / 2, y + 95, 34, brand, '800 28px "Noto Sans Thai", "Sarabun", sans-serif', 'center');
+            });
+            ctx.textAlign = 'left';
+
+            // steps
+            y = 800;
+            const stepColor = isAia ? '#0f766e' : '#6ee7b7';
+            ctx.fillStyle = stepColor;
+            ctx.font = '700 28px "Noto Sans Thai", "Sarabun", sans-serif';
+            ctx.fillText('ทำต่อยังไง', 80, y);
+            y += 30;
+            plan.steps.forEach((step, i) => {
+              y += 28;
+              roundRect(80, y, W - 160, 120, 20);
+              ctx.fillStyle = isAia ? 'rgba(15,118,110,0.07)' : 'rgba(16,185,129,0.10)';
+              ctx.fill();
+              ctx.strokeStyle = isAia ? 'rgba(15,118,110,0.25)' : 'rgba(16,185,129,0.28)';
+              ctx.lineWidth = 1.5;
+              ctx.stroke();
+              ctx.beginPath();
+              ctx.arc(120, y + 60, 26, 0, Math.PI * 2);
+              ctx.fillStyle = isAia ? 'rgba(15,118,110,0.18)' : 'rgba(16,185,129,0.35)';
+              ctx.fill();
+              ctx.fillStyle = stepColor;
+              ctx.font = '800 26px "Noto Sans Thai", "Sarabun", sans-serif';
+              ctx.textAlign = 'center';
+              ctx.fillText(String(i + 1), 120, y + 70);
+              ctx.textAlign = 'left';
+              const sLines = wrap(step, W - 280, '500 28px "Noto Sans Thai", "Sarabun", sans-serif');
+              drawLines(sLines.slice(0, 2), 170, y + 48, 36, text, '500 28px "Noto Sans Thai", "Sarabun", sans-serif');
+              y += 120;
+            });
+
+            // path chosen
+            y += 36;
+            ctx.fillStyle = textDim;
+            ctx.font = '500 24px "Noto Sans Thai", "Sarabun", sans-serif';
+            ctx.fillText('ทางที่คุณเลือก: ' + pathLabelOf(), 80, y);
+
+            // footer
+            ctx.fillStyle = isAia ? 'rgba(29,29,31,0.08)' : 'rgba(255,255,255,0.08)';
+            ctx.fillRect(80, H - 140, W - 160, 2);
+            ctx.fillStyle = textDim;
+            ctx.font = '500 24px "Noto Sans Thai", "Sarabun", sans-serif';
+            ctx.fillText('เก็บไว้ทบทวนเอง · ไม่ต้องส่งหาใคร', 80, H - 80);
+            const d = new Date();
+            ctx.fillStyle = textDim;
+            ctx.font = '400 22px "Noto Sans Thai", "Sarabun", sans-serif';
+            ctx.fillText(d.toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' }), 80, H - 40);
+
+            return new Promise((resolve) => {
+              canvas.toBlob((blob) => resolve({ canvas, blob }), 'image/png');
+            });
+          };
+
+          const wireSummary = () => {
+            hideBottom();
+            setTimeout(animatePyramid, 200);
+            state.answers.nextPath = 'fix';
+            state.answers.priorityId = plan.id;
+            document.querySelectorAll('#pathChips .path-chip').forEach(btn => {
+              btn.onclick = () => {
+                document.querySelectorAll('#pathChips .path-chip').forEach(x => x.classList.remove('selected'));
+                btn.classList.add('selected');
+                state.answers.nextPath = btn.dataset.path;
+              };
+            });
+            const statusEl = document.getElementById('shareStatus');
+            const setStatus = (t, ok = true) => {
+              if (!statusEl) return;
+              statusEl.style.color = ok ? 'var(--success)' : '#fca5a5';
+              statusEl.textContent = t;
+            };
+            const previewWrap = document.getElementById('sharePreviewWrap');
+            const preview = document.getElementById('sharePreview');
+
+            const downloadBlob = (blob, name) => {
+              const url = URL.createObjectURL(blob);
+              const aEl = document.createElement('a');
+              aEl.href = url;
+              aEl.download = name;
+              document.body.appendChild(aEl);
+              aEl.click();
+              aEl.remove();
+              setTimeout(() => URL.revokeObjectURL(url), 2000);
+            };
+
+            const saveCardBtn = document.getElementById('saveCardBtn');
+            if (saveCardBtn) {
+              saveCardBtn.onclick = async () => {
+                setStatus('กำลังสร้างการ์ด...');
+                try {
+                  const { canvas, blob } = await makeShareCard();
+                  if (!blob) throw new Error('no blob');
+                  if (preview && previewWrap) {
+                    preview.src = canvas.toDataURL('image/png');
+                    previewWrap.style.display = 'block';
+                  }
+                  downloadBlob(blob, 'สรุปแผนชีวิต.png');
+                  setStatus('บันทึกรูปแล้ว · ดูในโฟลเดอร์ดาวน์โหลดได้เลย');
+                } catch (_) {
+                  setStatus('สร้างรูปไม่สำเร็จ · ลองแชร์ข้อความแทน', false);
+                }
+              };
+            }
+
+            const shareBtn = document.getElementById('shareBtn');
+            if (shareBtn) {
+              shareBtn.onclick = async () => {
+                setStatus('กำลังเตรียมแชร์...');
+                const text = buildShareText();
+                try {
+                  const { canvas, blob } = await makeShareCard();
+                  if (preview && previewWrap && canvas) {
+                    preview.src = canvas.toDataURL('image/png');
+                    previewWrap.style.display = 'block';
+                  }
+                  if (blob && navigator.share && navigator.canShare) {
+                    const file = new File([blob], 'สรุปแผนชีวิต.png', { type: 'image/png' });
+                    if (navigator.canShare({ files: [file] })) {
+                      await navigator.share({
+                        files: [file],
+                        title: 'สรุปแผนชีวิตของฉัน',
+                        text
+                      });
+                      setStatus('แชร์รูปเรียบร้อยแล้ว');
+                      return;
+                    }
+                  }
+                  if (navigator.share) {
+                    await navigator.share({ title: 'สรุปแผนชีวิตของฉัน', text });
+                    setStatus('แชร์ข้อความเรียบร้อยแล้ว');
+                    return;
+                  }
+                  if (blob) {
+                    downloadBlob(blob, 'สรุปแผนชีวิต.png');
+                    setStatus('บันทึกรูปแล้ว · เครื่องนี้ไม่รองรับแชร์ตรง');
+                    return;
+                  }
+                } catch (e) {
+                  if (e && e.name === 'AbortError') {
+                    setStatus('');
+                    return;
+                  }
+                }
+                try {
+                  if (navigator.clipboard && navigator.clipboard.writeText) {
+                    await navigator.clipboard.writeText(text);
+                    setStatus('คัดลอกข้อความสรุปไว้แล้ว · วางในโน้ตได้');
+                    return;
+                  }
+                } catch (_) {}
+                setStatus('แชร์ไม่สำเร็จ · กดบันทึกรูปแทน', false);
+              };
+            }
+
+            const restart = document.getElementById('restartBtn');
+            if (restart) {
+              restart.onclick = () => {
+                stopSpeak();
+                state.step = 0;
+                state.introPlayed = false;
+                state.stepHeard = {};
+                state.answers = {
+                  age: 35, retireAge: 60, monthlySpend: 30000, prepared: 0,
+                  careParents: null, hasSpouse: null, kids: 0, kidsAges: [],
+                  eduGoal: 'bachelor', goals: [], risks: [], monthlyExpense: 50000,
+                  efAmount: 0, hasHealth: null, hasLife: null, hasCI: null,
+                  hasAccident: null, riskTol: 'medium', topWorry: null
+                };
+                goTo(0);
+              };
+            }
+          };
+
+          gateStepWithClip(10, {
+            nextLabel: 'ดูสรุปผล',
+            onNext: () => { hideBottom(); },
+            wireActions: wireSummary
+          });
+        }
+      },
+
+      // Extra steps for deep dive if needed, but 10 is good. Add more if time.
+      // We stop at 10 for flow, TOTAL was approx.
+    ];
+
+    // Adjust total for progress
+    // Actually steps.length is 11 (0-10)
+    // In code I set 12, but ok approximate.
+
+    function goTo(n) {
+      stopSpeak();
+      state.step = n;
+      if (n >= steps.length) n = steps.length - 1;
+      hideBottom();
+      showZonePlay(false);
+      content.style.opacity = '0';
+      setTimeout(() => {
+        steps[n].render();
+        content.style.opacity = '1';
+        // ขั้นที่มีคลิปจะ play เองใน render
+        if (!STEP_CLIPS[n]) ensureAvatarPlaying();
+        // DEV: ข้ามการบังคับฟัง — ปลด next + เงียบคลิป
+        if (DEV_MODE) applyDevUnlock();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }, 150);
+    }
+
+    /** DEV only: ทำเครื่องหมายว่าฟังแล้ว + เงียบวิดีโอ + ปลดปุ่มไปต่อ */
+    function applyDevUnlock() {
+      if (!DEV_MODE) return;
+      const s = state.step;
+      if (s === 0) state.introPlayed = true;
+      state.stepHeard[s] = true;
+      stopSpeak();
+      const av = document.getElementById('avatar');
+      if (av && s > 0) startSilentLoop(av);
+      showZonePlay(false);
+      showAvatarPlay(false);
+
+      const startBtn = document.getElementById('startBtn');
+      if (startBtn && s === 0) {
+        startBtn.disabled = false;
+        startBtn.textContent = 'เริ่มดูกัน 🚀 (dev ข้ามได้)';
+        startBtn.onclick = () => goTo(1);
+      }
+
+      // โชว์ actions ที่ซ่อนไว้ + ปลดปุ่มล่าง
+      setStepActionsVisible(true);
+      if (s > 0 && s < steps.length - 1) {
+        const labels = {
+          1: 'ต่อไป · เป้าหมายเกษียณ',
+          2: 'คำนวณเงินที่ต้องเตรียม',
+          3: 'ต่อไป · ครอบครัว',
+          4: 'ต่อไป · เป้าหมายชีวิต',
+          5: 'ต่อไป · ความเสี่ยง',
+          6: 'ดูพีระมิดการเงิน',
+          7: 'คำนวณเงินสำรอง',
+          8: 'ต่อไป · ออม & ลงทุน',
+          9: 'ดูสรุปแผนชีวิต',
+        };
+        showBottom(labels[s] || 'ไปต่อ →', () => {
+          stopSpeak();
+          goTo(s + 1);
+        });
+        btnNext.disabled = false;
+        btnNext.classList.remove('waiting');
+      }
+    }
+
+    function devGoNext() {
+      if (!DEV_MODE) return;
+      const s = state.step;
+      applyDevUnlock();
+      if (s >= steps.length - 1) return;
+      goTo(s + 1);
+    }
+
+    // ===================== CONFETTI =====================
+    function launchConfetti() {
+      const c = document.getElementById('confetti');
+      c.innerHTML = '';
+      const theme = document.documentElement.getAttribute('data-theme') || 'aia';
+      const colors = theme === 'classic'
+        ? ['#f5c518', '#00d4ff', '#10b981', '#a78bfa', '#f472b6']
+        : ['#d31145', '#1d1d1f', '#0f766e', '#9ca3af', '#f43f5e'];
+      for (let i = 0; i < 60; i++) {
+        const p = document.createElement('div');
+        p.style.cssText = `
+          position:absolute; width:8px; height:8px; border-radius:2px;
+          background:${colors[i%colors.length]};
+          left:${Math.random()*100}%; top:-10px;
+          opacity:1;
+          transform:rotate(${Math.random()*360}deg);
+          animation: confetti-fall ${2+Math.random()*2}s linear forwards;
+        `;
+        c.appendChild(p);
+      }
+      // inject keyframes once
+      if (!document.getElementById('confettiStyle')) {
+        const s = document.createElement('style');
+        s.id = 'confettiStyle';
+        s.textContent = `@keyframes confetti-fall { to { top: 110%; opacity: 0; transform: translateX(${Math.random()>0.5? '':'-'}80px) rotate(720deg); } }`;
+        document.head.appendChild(s);
+      }
+      setTimeout(() => c.innerHTML = '', 4500);
+    }
+
+    // ===================== CONTROLS =====================
+    document.getElementById('btnMute').onclick = () => {
+      state.muted = !state.muted;
+      const btn = document.getElementById('btnMute');
+      btn.textContent = state.muted ? '🔇' : '🔊';
+      btn.title = state.muted ? 'เปิดเสียงวิดีโอ' : 'ปิดเสียงวิดีโอ';
+      if (state.muted) stopSpeak();
+    };
+    document.getElementById('btnSkip').onclick = () => {
+      // หน้าแรก: ข้ามได้เฉพาะหลังฟังจบอย่างน้อย 1 รอบ
+      if (state.step === 0) {
+        if (!state.introPlayed) return;
+        stopSpeak();
+        goTo(1);
+        return;
+      }
+      // ขั้นอื่น: ข้ามคลิป (หลังเคยฟังจบแล้ว) → ปลดปุ่มไปต่อ
+      if (STEP_CLIPS[state.step]) {
+        if (!state.stepHeard[state.step]) return;
+        state.stepHeard[state.step] = true;
+        stopSpeak();
+        startSilentLoop(document.getElementById('avatar'));
+        btnNext.disabled = false;
+        btnNext.classList.remove('waiting');
+        return;
+      }
+      stopSpeak();
+    };
+
+    // DEV bar
+    if (DEV_MODE) {
+      document.getElementById('devBar').classList.add('show');
+      document.getElementById('devNextBtn').onclick = devGoNext;
+      document.title = '[DEV] ' + document.title;
+    }
+
+    // Theme: ใช้ AIA เป็นหลัก · ธีม classic ยังอยู่ใน CSS (กันเหนียว)
+    // ถ้าต้องการกลับธีมเดิม: ใส่ ?theme=classic ใน URL ครั้งเดียว
+    (function initTheme() {
+      const root = document.documentElement;
+      let theme = 'aia';
+      try {
+        const q = new URLSearchParams(location.search).get('theme');
+        if (q === 'classic' || q === 'aia') {
+          theme = q;
+          localStorage.setItem('life-theme', theme);
+        } else {
+          const s = localStorage.getItem('life-theme');
+          if (s === 'classic' || s === 'aia') theme = s;
+        }
+      } catch (_) {}
+      root.setAttribute('data-theme', theme);
+    })();
+
+    // Start
+    goTo(0);
+
+    // Make content transition smooth
+    content.style.transition = 'opacity 0.2s ease';
+  </script>
+</body>
+</html>
