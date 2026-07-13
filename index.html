@@ -1032,18 +1032,18 @@
     // DEV: ใส่ ?dev=1 ใน URL เพื่อข้ามคลิป / กด Next ได้ทันที (เฉพาะตอนพัฒนา)
     const DEV_MODE = new URLSearchParams(location.search).has('dev');
     // คลิปเสียงจริงทีละหน้า (lazy load) · duration วินาที (จากไฟล์) ใช้ปลดล็อกบน iOS/WebView
-    const LANDING_CLIP = { src: 'avatar.mp4', duration: 26 };
+    const LANDING_CLIP = { src: 'avatar.mp4', duration: 25.77 };
     const STEP_CLIPS = {
-      1: { src: 'media/01-age.mp4', poster: 'media/01-age.jpg', duration: 10 },
-      2: { src: 'media/02-retire.mp4', poster: 'media/02-retire.jpg', duration: 23 },
-      3: { src: 'media/03-prepared.mp4', poster: 'media/03-prepared.jpg', duration: 10 },
-      4: { src: 'media/04-family.mp4', poster: 'media/04-family.jpg', duration: 16 },
-      5: { src: 'media/05-goals.mp4', poster: 'media/05-goals.jpg', duration: 35 },
-      6: { src: 'media/06-risks.mp4', poster: 'media/06-risks.jpg', duration: 21 },
-      7: { src: 'media/07-pyramid.mp4', poster: 'media/07-pyramid.jpg', duration: 38 },
-      8: { src: 'media/08-protect.mp4', poster: 'media/08-protect.jpg', duration: 27 },
-      9: { src: 'media/09-invest.mp4', poster: 'media/09-invest.jpg', duration: 48 },
-      10: { src: 'media/10-summary.mp4', poster: 'media/10-summary.jpg', duration: 40 },
+      1: { src: 'media/01-age.mp4', poster: 'media/01-age.jpg', duration: 9.92 },
+      2: { src: 'media/02-retire.mp4', poster: 'media/02-retire.jpg', duration: 22.1 },
+      3: { src: 'media/03-prepared.mp4', poster: 'media/03-prepared.jpg', duration: 9.28 },
+      4: { src: 'media/04-family.mp4', poster: 'media/04-family.jpg', duration: 15.79 },
+      5: { src: 'media/05-goals.mp4', poster: 'media/05-goals.jpg', duration: 34.81 },
+      6: { src: 'media/06-risks.mp4', poster: 'media/06-risks.jpg', duration: 20.5 },
+      7: { src: 'media/07-pyramid.mp4', poster: 'media/07-pyramid.jpg', duration: 37.27 },
+      8: { src: 'media/08-protect.mp4', poster: 'media/08-protect.jpg', duration: 26.75 },
+      9: { src: 'media/09-invest.mp4', poster: 'media/09-invest.jpg', duration: 47.38 },
+      10: { src: 'media/10-summary.mp4', poster: 'media/10-summary.jpg', duration: 39.57 },
     };
     let state = {
       step: 0,
@@ -1191,7 +1191,7 @@
       if (video.ended) return true;
       const d = mediaDuration(video, expectedDuration);
       const t = Number(video.currentTime) || 0;
-      return d > 0 && t > 0.05 && t >= Math.max(0, d - 0.55);
+      return d > 0 && t > 0.05 && t >= Math.max(0, d - 0.12);
     }
 
     /**
@@ -1205,12 +1205,8 @@
       clearVideoEndHandlers(video);
       let done = false;
       let maxT = 0;
-      let playAccumMs = 0;
-      let lastSample = Date.now();
-      const sessionStart = Date.now();
       const expected = Number(opts.expectedDuration) || 0;
       let pollTimer = null;
-      let hardTimer = null;
 
       const cleanup = () => {
         video.removeEventListener('ended', onEvent);
@@ -1221,7 +1217,6 @@
         video.removeEventListener('durationchange', onEvent);
         video.removeEventListener('webkitendfullscreen', onEvent);
         if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
-        if (hardTimer) { clearTimeout(hardTimer); hardTimer = null; }
         _videoEndCleanups.delete(video);
       };
 
@@ -1234,14 +1229,6 @@
 
       const check = () => {
         if (done) return;
-        const now = Date.now();
-        const dt = Math.min(1000, now - lastSample);
-        lastSample = now;
-
-        // นับเวลาที่เล่นจริง (หยุดนับตอน pause / ซ่อนแท็บ)
-        const advancing = !video.paused && !video.ended && !document.hidden;
-        if (advancing) playAccumMs += dt;
-
         const t = Number(video.currentTime) || 0;
         if (t > maxT) maxT = t;
 
@@ -1249,26 +1236,14 @@
 
         const d = mediaDuration(video, expected);
 
-        // ใกล้จบตาม currentTime
-        if (d > 0 && t >= d - 0.55 && (t > 0.05 || maxT > 0.05)) return finish();
+        // ปลดล็อกเมื่อหัวเล่นถึงท้ายคลิปจริงเท่านั้น
+        if (d > 0 && t >= d - 0.12 && (t > 0.05 || maxT > 0.05)) return finish();
 
         // iOS คลาสสิก: จบแล้ว pause + รีเซ็ต currentTime กลับ 0
         if (video.paused && maxT >= 0.8 && t < 0.2) {
-          if (d > 0 && maxT >= d * 0.72) return finish();
-          if (!d && expected > 0 && maxT >= expected * 0.72) return finish();
+          if (d > 0 && maxT >= Math.max(0.5, d - 0.75)) return finish();
           // pause กลางคลิป — ยังไม่จบ
         }
-
-        // เล่นครบตามเวลาที่สะสม (แม้ currentTime พัง)
-        if (d > 0 && playAccumMs >= (d - 0.35) * 1000 && maxT >= Math.min(0.5, d * 0.05)) {
-          return finish();
-        }
-        // currentTime พังทั้งก้อน แต่เสียงเล่นครบตาม expected
-        if (d > 0 && playAccumMs >= (d + 0.6) * 1000) return finish();
-
-        // hard wall-clock จากเริ่ม session — ปลดล็อกเสมอ ห้ามค้าง
-        const hardMs = ((d || expected || 40) + 3.5) * 1000;
-        if (now - sessionStart >= hardMs) return finish();
       };
 
       const onEvent = () => check();
@@ -1281,10 +1256,6 @@
       video.addEventListener('durationchange', onEvent);
       video.addEventListener('webkitendfullscreen', onEvent);
       pollTimer = setInterval(check, 200);
-
-      // hard timer สำรอง (แม้ interval ถูก throttle ใน background tab)
-      const hardMs = ((expected || 40) + 4) * 1000;
-      hardTimer = setTimeout(() => finish(), hardMs);
 
       _videoEndCleanups.set(video, cleanup);
       return cleanup;
@@ -1345,7 +1316,7 @@
 
     /**
      * เล่นคลิปเสียงจริงครั้งหนึ่ง แล้วเรียก onDone — ใช้ร่วม landing + ทุกขั้น
-     * onDone ถูกเรียกแน่นอนเมื่อจบ (หรือ hard timeout) ถ้า session ยัง active
+     * onDone ถูกเรียกเมื่อคลิปจบจริงและ session ยัง active
      */
     function playClipOnce(video, opts = {}) {
       const gen = ++_playbackGen;
@@ -1359,6 +1330,15 @@
         if (!stillActive()) return;
         state.speaking = false;
         try { if (opts.onDone) opts.onDone(reason); } catch (_) {}
+      };
+      const failPlayback = () => {
+        if (finished || !stillActive()) return;
+        finished = true;
+        clearVideoEndHandlers(video);
+        try { video.pause(); } catch (_) {}
+        video.classList.remove('speaking');
+        state.speaking = false;
+        if (opts.onPlayFailed) opts.onPlayFailed();
       };
 
       prepareVideoEl(video);
@@ -1399,20 +1379,10 @@
         setTimeout(() => {
           if (finished || !stillActive()) return;
           const t = Number(video.currentTime) || 0;
-          if (t < 0.15 && video.paused) {
-            if (opts.onPlayFailed) opts.onPlayFailed();
-          } else if (t < 0.15 && !video.paused) {
-            // บาง WebView รายงาน playing แต่หัวไม่เดิน — ยังรอ hard timeout
-          }
+          if (t < 0.15) failPlayback();
         }, 6000);
       }).catch(() => {
-        if (finished || !stillActive()) return;
-        clearVideoEndHandlers(video);
-        try { video.pause(); } catch (_) {}
-        video.classList.remove('speaking');
-        state.speaking = false;
-        // สำคัญ: อย่าค้าง "กำลังฟัง" — ให้ UI กดเล่นใหม่ได้
-        if (opts.onPlayFailed) opts.onPlayFailed();
+        failPlayback();
       });
 
       return {
@@ -1626,21 +1596,9 @@
     function gateStepWithClip(step, opts) {
       const already = !!state.stepHeard[step] || DEV_MODE;
       let unlocked = already;
-      const clip = STEP_CLIPS[step];
-      const expectSec = (clip && clip.duration) || 30;
-
-      // เคลียร์ failsafe เก่า
-      if (state._gateFailsafe) {
-        clearTimeout(state._gateFailsafe);
-        state._gateFailsafe = null;
-      }
 
       const reveal = () => {
         if (state.step !== step) return;
-        if (state._gateFailsafe) {
-          clearTimeout(state._gateFailsafe);
-          state._gateFailsafe = null;
-        }
         const first = !unlocked;
         unlocked = true;
         state.stepHeard[step] = true;
@@ -1676,34 +1634,10 @@
         }
       } else {
         setStepActionsVisible(false);
-        // ปุ่มล่าง: ระหว่างฟังกดไม่ได้ — แต่ failsafe จะปลดแน่นอน
-        showBottom('กำลังฟัง... 🎧', () => {
-          // ถ้า user เค้นกด: หลัง 40% ของคลิป อนุญาตข้าม (กันค้าง WebView)
-          // (ยัง disabled ตอนแรก — เปิดทีหลังด้วย failsafe partial)
-        });
+        showBottom('กำลังฟัง... 🎧', () => {});
         btnNext.disabled = true;
         btnNext.classList.add('waiting');
         playStepClip(step, { onDone: reveal });
-
-        // ชั้น 2: ถ้า video event พังทั้งหมด ยังปลดล็อก UI หลัง duration+5s
-        state._gateFailsafe = setTimeout(() => {
-          if (state.step !== step || unlocked) return;
-          try { stopSpeak(); } catch (_) {}
-          reveal();
-        }, (expectSec + 5) * 1000);
-
-        // ชั้น 3: หลัง 70% เปิดปุ่ม "ข้ามไปทำต่อ" กันค้าง WebView
-        setTimeout(() => {
-          if (state.step !== step || unlocked) return;
-          btnNext.disabled = false;
-          btnNext.classList.remove('waiting');
-          showBottom('ข้ามไปทำต่อ →', () => {
-            if (state.step !== step || unlocked) return;
-            try { stopSpeak(); } catch (_) {}
-            reveal();
-          });
-          showZonePlay(true);
-        }, Math.max(4000, expectSec * 0.7 * 1000));
       }
 
       const zoneBtn = document.getElementById('zonePlayBtn');
@@ -1762,16 +1696,11 @@
           if (state.step !== step) return;
           document.getElementById('btnSkip').style.display = 'none';
           showZonePlay(true);
-          // อย่าค้างปุ่มล่าง disabled ถ้าเล่นไม่ติด — เปิดให้ข้ามได้
+          // Autoplay ไม่สำเร็จ: ให้กด Play แล้วฟังคลิป ไม่ปลดล็อกก่อนจบ
           if (!state.stepHeard[step]) {
-            btnNext.disabled = false;
-            btnNext.classList.remove('waiting');
-            showBottom('เล่นไม่ติด · ไปต่อได้ →', () => {
-              if (state.step !== step) return;
-              if (typeof state._stepReveal === 'function' && state._stepRevealStep === step) {
-                state._stepReveal();
-              }
-            });
+            btnNext.disabled = true;
+            btnNext.classList.add('waiting');
+            showBottom('แตะปุ่ม Play เพื่อฟังต่อ', () => {});
           }
         },
         onDone: () => {
@@ -1792,19 +1721,15 @@
         btn.disabled = false;
         btn.textContent = state.introPlayed ? 'ไปต่อเลย →' : 'เริ่มดูกัน 🚀';
       } else if (mode === 'playing') {
-        // iOS: อย่า disabled ถาวร — เปลี่ยนเป็นปุ่มที่กดซ้ำ/ข้ามได้หลัง timeout
-        btn.disabled = false;
+        btn.disabled = true;
         btn.textContent = 'กำลังฟัง... 🎧';
-      } else if (mode === 'skip') {
-        btn.disabled = false;
-        btn.textContent = 'ไปหน้าถัดไป →';
       }
     }
 
     /**
      * เล่นคลิปหน้าแรก (ปุ่ม Play / เริ่มดูกัน ใช้ตัวเดียวกัน)
      * - จบคลิป → ไปหน้าถัดไปอัตโนมัติ
-     * - hard timeout / ปุ่มข้าม กันค้างบน iOS WebView
+     * - ถ้าเล่นไม่สำเร็จ ให้กด Play ใหม่ โดยไม่ข้ามคลิป
      */
     function playLandingVoice(video) {
       if (!video || state.step !== 0) return;
@@ -1817,19 +1742,11 @@
       }
 
       prepareVideoEl(video);
-      if (state._landingFailsafe) {
-        clearTimeout(state._landingFailsafe);
-        state._landingFailsafe = null;
-      }
 
       let landingFinishing = false;
       const finishLanding = () => {
         if (state.step !== 0 || landingFinishing) return;
         landingFinishing = true;
-        if (state._landingFailsafe) {
-          clearTimeout(state._landingFailsafe);
-          state._landingFailsafe = null;
-        }
         state.introPlayed = true;
         state.speaking = false;
         showAvatarPlay(false);
@@ -1842,30 +1759,6 @@
       document.getElementById('btnSkip').style.display = state.introPlayed ? 'flex' : 'none';
       showAvatarPlay(false);
       setLandingCTA('playing');
-
-      // ระหว่างฟัง: กดซ้ำได้ — ค้าง/พัง = เล่นใหม่ · ครบ ~70% = ไปต่อ
-      const startBtn = document.getElementById('startBtn');
-      const playStartedAt = Date.now();
-      if (startBtn) {
-        startBtn.onclick = () => {
-          if (state.step !== 0) return;
-          if (state.introPlayed) {
-            finishLanding();
-            return;
-          }
-          const elapsed = (Date.now() - playStartedAt) / 1000;
-          if (elapsed >= LANDING_CLIP.duration * 0.7) {
-            try { video.pause(); } catch (_) {}
-            clearVideoEndHandlers(video);
-            finishLanding();
-            return;
-          }
-          // คลิปค้าง/pause กลางทาง → เริ่มใหม่
-          if (video.paused || !state.speaking) {
-            playLandingVoice(video);
-          }
-        };
-      }
 
       playClipOnce(video, {
         expectedDuration: LANDING_CLIP.duration,
@@ -1889,31 +1782,10 @@
         },
         onDone: () => finishLanding()
       });
-
-      // failsafe สุดท้าย: ห้ามค้างเกิน duration+5s
-      state._landingFailsafe = setTimeout(() => {
-        if (state.step !== 0 || state.introPlayed) return;
-        try { clearVideoEndHandlers(video); video.pause(); } catch (_) {}
-        finishLanding();
-      }, (LANDING_CLIP.duration + 5) * 1000);
-
-      // หลัง 70% เปลี่ยนปุ่มเป็น "ไปหน้าถัดไป"
-      setTimeout(() => {
-        if (state.step !== 0 || state.introPlayed) return;
-        setLandingCTA('skip');
-      }, LANDING_CLIP.duration * 0.7 * 1000);
     }
 
     function stopSpeak() {
       _playbackGen++;
-      if (state._landingFailsafe) {
-        clearTimeout(state._landingFailsafe);
-        state._landingFailsafe = null;
-      }
-      if (state._gateFailsafe) {
-        clearTimeout(state._gateFailsafe);
-        state._gateFailsafe = null;
-      }
       document.querySelectorAll('video.avatar').forEach(v => {
         clearVideoEndHandlers(v);
         try { v.pause(); } catch (_) {}
