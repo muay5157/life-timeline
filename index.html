@@ -1116,6 +1116,31 @@
       );
     }
 
+    // เงินสำรองฉุกเฉิน: ช่วงต้นทีละ 1 พัน · สูงสุด 3 ล้าน
+    const EF_SLIDER_MAX = 400;
+    const EF_AMOUNT_MAX = 3000000;
+    function efFromSlider(i) {
+      i = Math.max(0, Math.min(EF_SLIDER_MAX, Math.round(Number(i) || 0)));
+      if (i === 0) return 0;
+      if (i <= 150) return i * 1000;                                  // 1 พัน – 1.5 แสน
+      if (i <= 300) return 150000 + (i - 150) * 10000;                 // → ~1.65 ล้าน
+      return Math.min(
+        EF_AMOUNT_MAX,
+        1650000 + (i - 300) * Math.round((EF_AMOUNT_MAX - 1650000) / 100)
+      );                                                              // → 3 ล้าน
+    }
+    function sliderFromEf(p) {
+      p = Math.max(0, Math.round(Number(p) || 0));
+      if (p <= 0) return 0;
+      if (p <= 150000) return Math.min(150, Math.round(p / 1000));
+      if (p <= 1650000) return 150 + Math.round((p - 150000) / 10000);
+      if (p >= EF_AMOUNT_MAX) return EF_SLIDER_MAX;
+      return Math.min(
+        EF_SLIDER_MAX,
+        300 + Math.round((p - 1650000) / ((EF_AMOUNT_MAX - 1650000) / 100))
+      );
+    }
+
     // ===================== AVATAR VIDEO + เสียงจริง =====================
     function ensureAvatarPlaying() {
       const av = document.getElementById('avatar');
@@ -1983,9 +2008,10 @@
               </div>
               <div class="card">
                 <div class="question">ตอนนี้คุณมีเงินสำรองก้อนนี้อยู่เท่าไหร่?</div>
-                <div class="slider-value" id="efVal">${fmtM(a.efAmount)}</div>
-                <input type="range" min="0" max="3000000" step="50000" value="${a.efAmount}" id="efSlider" />
-                <div class="slider-label"><span>0</span><span>3 ล้าน</span></div>
+                <div class="slider-value" id="efVal">${a.efAmount === 0 ? '0 บาท' : fmtB(a.efAmount)}</div>
+                <input type="range" min="0" max="${EF_SLIDER_MAX}" step="1" value="${sliderFromEf(a.efAmount)}" id="efSlider" />
+                <div class="slider-label"><span>0 บาท</span><span>3 ล้าน</span></div>
+                <div class="hint mt-8">ช่วงต้นทีละพัน · เลือกใกล้ๆ ได้เลย</div>
               </div>
               <div class="card">
                 <div class="question">บริหารความเสี่ยง · มีประกันเหล่านี้หรือยัง?</div>
@@ -2016,8 +2042,10 @@
               const efs = document.getElementById('efSlider');
               if (efs) {
                 efs.oninput = () => {
-                  state.answers.efAmount = +efs.value;
-                  document.getElementById('efVal').textContent = fmtM(+efs.value);
+                  const amount = efFromSlider(+efs.value);
+                  state.answers.efAmount = amount;
+                  document.getElementById('efVal').textContent =
+                    amount === 0 ? '0 บาท' : fmtB(amount);
                 };
               }
               document.querySelectorAll('#insGrid .btn').forEach(b => {
