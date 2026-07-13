@@ -990,6 +990,8 @@
           poster="avatar.jpg"
           playsinline
           webkit-playsinline
+          x5-playsinline
+          preload="metadata"
           disablepictureinpicture
           aria-label="นักวิเคราะห์แผน AI"
         ></video>
@@ -1142,22 +1144,226 @@
     }
 
     // ===================== AVATAR VIDEO + เสียงจริง =====================
+    // Safari / Messenger in-app browser มักไม่ยิง 'ended' / ลด timeupdate
+    // → ใช้หลายทาง + poll ทุกหน้า (landing + ขั้น 1–10)
+    const _videoEndCleanups = new WeakMap();
+    let _playbackGen = 0; // ยกเลิก callback ของคลิปเก่าเมื่อเปลี่ยนหน้า/เล่นใหม่
+
+    function clearVideoEndHandlers(video) {
+      if (!video) return;
+      const fn = _videoEndCleanups.get(video);
+      if (fn) {
+        try { fn(); } catch (_) {}
+        _videoEndCleanups.delete(video);
+      }
+      try { video.onended = null; } catch (_) {}
+    }
+
+    function safeSeek(video, t) {
+      if (!video) return;
+      try {
+        // Safari โยน/ไม่ทำงานถ้า seek ก่อนมี metadata
+        if (video.readyState >= 1) video.currentTime = t;
+      } catch (_) {}
+    }
+
+    function isVideoNearEnd(video) {
+      if (!video) return false;
+      if (video.ended) return true;
+      const d = video.duration;
+      if (!d || !isFinite(d) || d <= 0) return false;
+      // ต้องเล่นไปแล้วจริง ๆ (กัน false positive ตอน currentTime=0)
+      if (video.currentTime < 0.12 && d > 0.5) return false;
+      return video.currentTime >= Math.max(0, d - 0.45);
+    }
+
+    /**
+     * ตรวจจบคลิปหลายทาง — ใช้ร่วมทุกหน้า
+     * ended + timeupdate + pause ใกล้จบ + durationchange + poll + timeout
+     */
+    function bindVideoEnd(video, onEnd) {
+      if (!video) return () => {};
+      clearVideoEndHandlers(video);
+      let done = false;
+      let safetyTimer = null;
+      let pollTimer = null;
+
+      const cleanup = () => {
+        video.removeEventListener('ended', onEnded);
+        video.removeEventListener('timeupdate', onTick);
+        video.removeEventListener('pause', onPause);
+        video.removeEventListener('loadedmetadata', onMeta);
+        video.removeEventListener('durationchange', onMeta);
+        video.removeEventListener('webkitendfullscreen', onEnded);
+        if (safetyTimer) {
+          clearTimeout(safetyTimer);
+          safetyTimer = null;
+        }
+        if (pollTimer) {
+          clearInterval(pollTimer);
+          pollTimer = null;
+        }
+        _videoEndCleanups.delete(video);
+      };
+
+      const finish = () => {
+        if (done) return;
+        done = true;
+        cleanup();
+        try { onEnd(); } catch (_) {}
+      };
+
+      const onEnded = () => finish();
+      const onTick = () => { if (isVideoNearEnd(video)) finish(); };
+      const onPause = () => {
+        // บาง WebView (Messenger/Safari) pause ตอนจบแทน ended
+        if (isVideoNearEnd(video)) finish();
+      };
+      const scheduleSafety = () => {
+        if (safetyTimer) clearTimeout(safetyTimer);
+        const d = video.duration;
+        if (!d || !isFinite(d) || d <= 0) return;
+        safetyTimer = setTimeout(() => {
+          if (done) return;
+          if (isVideoNearEnd(video)) finish();
+          else if (
+            video.paused &&
+            video.currentTime > 0.5 &&
+            video.currentTime >= d * 0.9
+          ) finish();
+        }, Math.ceil(d * 1000) + 1500);
+      };
+      const onMeta = () => scheduleSafety();
+
+      video.addEventListener('ended', onEnded);
+      video.addEventListener('timeupdate', onTick);
+      video.addEventListener('pause', onPause);
+      video.addEventListener('loadedmetadata', onMeta);
+      video.addEventListener('durationchange', onMeta);
+      // iOS บางเวอร์ชัน: ออกจาก fullscreen แล้วคลิปจบแล้ว
+      video.addEventListener('webkitendfullscreen', onEnded);
+      // poll: Messenger มัก throttle timeupdate หนัก
+      pollTimer = setInterval(onTick, 280);
+      if (video.readyState >= 1) scheduleSafety();
+      _videoEndCleanups.set(video, cleanup);
+      return cleanup;
+    }
+
+    /** รอ media พร้อมก่อน play — Safari มัก fail ถ้า play() ทันทีหลัง src/load() */
+    function playWhenReady(video) {
+      if (!video) return Promise.reject(new Error('no video'));
+      const tryPlay = () => {
+        const p = video.play();
+        return (p && typeof p.then === 'function') ? p : Promise.resolve();
+      };
+      if (video.readyState >= 2) return tryPlay();
+      return new Promise((resolve, reject) => {
+        let settled = false;
+        const settle = (fn) => {
+          if (settled) return;
+          settled = true;
+          video.removeEventListener('canplay', onReady);
+          video.removeEventListener('loadeddata', onReady);
+          video.removeEventListener('error', onErr);
+          clearTimeout(timer);
+          fn();
+        };
+        const onReady = () => settle(() => tryPlay().then(resolve, reject));
+        const onErr = () => settle(() => reject(new Error('media error')));
+        const timer = setTimeout(() => settle(() => tryPlay().then(resolve, reject)), 4000);
+        video.addEventListener('canplay', onReady);
+        video.addEventListener('loadeddata', onReady);
+        video.addEventListener('error', onErr);
+      });
+    }
+
+    /**
+     * เล่นคลิปเสียงจริงครั้งหนึ่ง แล้วเรียก onDone — ใช้ร่วม landing + ทุกขั้น
+     * @returns {{ gen: number, cancel: function }}
+     */
+    function playClipOnce(video, opts = {}) {
+      const gen = ++_playbackGen;
+      const stillActive = () => gen === _playbackGen && (!opts.isActive || opts.isActive());
+
+      let finished = false;
+      const finish = () => {
+        if (finished) return;
+        finished = true;
+        if (!stillActive()) return;
+        state.speaking = false;
+        try { if (opts.onDone) opts.onDone(); } catch (_) {}
+      };
+
+      clearVideoEndHandlers(video);
+      video.loop = false;
+      video.muted = !!opts.muted;
+      if (opts.speakingClass !== false) video.classList.add('speaking');
+      state.speaking = true;
+      bindVideoEnd(video, finish);
+
+      const kickoff = () => {
+        safeSeek(video, opts.seekTo != null ? opts.seekTo : 0);
+        return playWhenReady(video);
+      };
+
+      const p = (video.readyState >= 1)
+        ? kickoff()
+        : new Promise((resolve, reject) => {
+            let started = false;
+            const start = () => {
+              if (started) return;
+              started = true;
+              video.removeEventListener('loadedmetadata', onMeta);
+              clearTimeout(timer);
+              kickoff().then(resolve, reject);
+            };
+            const onMeta = () => start();
+            video.addEventListener('loadedmetadata', onMeta);
+            const timer = setTimeout(start, 2500);
+          });
+
+      p.then(() => {
+        if (!stillActive() || finished) return;
+        if (opts.onPlaying) opts.onPlaying();
+      }).catch(() => {
+        if (finished || !stillActive()) return;
+        clearVideoEndHandlers(video);
+        try { video.pause(); } catch (_) {}
+        safeSeek(video, 0);
+        video.classList.remove('speaking');
+        state.speaking = false;
+        if (opts.onPlayFailed) opts.onPlayFailed();
+      });
+
+      return {
+        gen,
+        cancel() {
+          if (gen === _playbackGen) _playbackGen++;
+          clearVideoEndHandlers(video);
+        }
+      };
+    }
+
     function ensureAvatarPlaying() {
       const av = document.getElementById('avatar');
       // ขั้นที่มีคลิปจริง จะเล่นผ่าน playStepClip — อย่าทับ
       if (STEP_CLIPS[state.step]) return;
       if (av && av.tagName === 'VIDEO') {
+        clearVideoEndHandlers(av);
         av.muted = true;
         av.loop = true;
+        safeSeek(av, 0);
         av.play().catch(() => {});
       }
     }
 
     function startSilentLoop(video) {
       if (!video) return;
+      clearVideoEndHandlers(video);
       video.loop = true;
       video.muted = true;
       video.classList.remove('speaking');
+      safeSeek(video, 0);
       video.play().catch(() => {});
       state.speaking = false;
       const skip = document.getElementById('btnSkip');
@@ -1330,24 +1536,37 @@
 
     /**
      * เกต UX: ฟังคลิปก่อน → ค่อยโชว์ปุ่ม/สไลด์ + ปลด next
+     * ใช้กับทุกขั้นที่มีคลิป (1–10)
      * @param {number} step
      * @param {{ nextLabel: string, onNext: function, wireActions?: function }} opts
      */
     function gateStepWithClip(step, opts) {
       const already = !!state.stepHeard[step] || DEV_MODE;
+      let unlocked = already;
 
       const reveal = () => {
+        if (state.step !== step) return;
+        const first = !unlocked;
+        unlocked = true;
         state.stepHeard[step] = true;
         setStepActionsVisible(true);
-        if (typeof opts.wireActions === 'function') opts.wireActions();
+        // wire เฉพาะครั้งแรก กัน listener ซ้ำ
+        if (first && typeof opts.wireActions === 'function') opts.wireActions();
         showBottom(opts.nextLabel, () => {
-          if (!state.stepHeard[step]) return;
+          if (!state.stepHeard[step] || state.step !== step) return;
           stopSpeak();
           opts.onNext();
         });
         btnNext.disabled = false;
         btnNext.classList.remove('waiting');
+        // หลังฟังจบแล้ว เปิดปุ่มข้ามสำหรับรอบถัดไป
+        const skip = document.getElementById('btnSkip');
+        if (skip && !state.speaking) skip.style.display = 'none';
       };
+
+      // เก็บ unlock ไว้ให้ mute/skip ใช้ได้ทุกหน้า
+      state._stepReveal = reveal;
+      state._stepRevealStep = step;
 
       if (already) {
         setStepActionsVisible(true);
@@ -1374,6 +1593,7 @@
       const zoneBtn = document.getElementById('zonePlayBtn');
       if (zoneBtn) {
         zoneBtn.onclick = () => {
+          if (state.step !== step) return;
           state.muted = false;
           document.getElementById('btnMute').textContent = '🔊';
           playStepClip(step, { onDone: reveal });
@@ -1390,22 +1610,16 @@
         return;
       }
 
-      const markDone = () => {
-        state.stepHeard[step] = true;
-        state.speaking = false;
-        startSilentLoop(av);
-        showZonePlay(false);
-        if (opts.onDone) opts.onDone();
-      };
-
       if (av.dataset.clipSrc !== clip.src) {
+        clearVideoEndHandlers(av);
         av.dataset.clipSrc = clip.src;
         av.src = clip.src;
         if (clip.poster) av.poster = clip.poster;
-        av.load();
+        try { av.load(); } catch (_) {}
       }
 
       if (state.muted) {
+        // ปิดเสียง: วนเงียบ + โชว์ปุ่มเล่น (ต้องกดเล่นฟังเพื่อ unlock)
         startSilentLoop(av);
         showZonePlay(true);
         return;
@@ -1419,26 +1633,27 @@
         return;
       }
 
-      av.loop = false;
-      av.muted = false;
-      try { av.currentTime = 0; } catch (_) {}
-      av.classList.add('speaking');
-      state.speaking = true;
       document.getElementById('btnSkip').style.display = state.stepHeard[step] ? 'flex' : 'none';
-      av.onended = markDone;
       showZonePlay(false);
 
-      const p = av.play();
-      if (p && p.then) {
-        p.then(() => showZonePlay(false)).catch(() => {
-          av.pause();
-          try { av.currentTime = 0; } catch (_) {}
-          av.classList.remove('speaking');
-          state.speaking = false;
+      playClipOnce(av, {
+        isActive: () => state.step === step,
+        onPlaying: () => {
+          if (state.step === step) showZonePlay(false);
+        },
+        onPlayFailed: () => {
+          if (state.step !== step) return;
           document.getElementById('btnSkip').style.display = 'none';
           showZonePlay(true);
-        });
-      }
+        },
+        onDone: () => {
+          if (state.step !== step) return;
+          state.stepHeard[step] = true;
+          startSilentLoop(av);
+          showZonePlay(false);
+          if (opts.onDone) opts.onDone();
+        }
+      });
     }
 
     /** อัปเดตปุ่มหลักหน้า Landing */
@@ -1464,52 +1679,49 @@
       // กำลังเล่นอยู่แล้ว — ไม่รีสตาร์ท
       if (state.speaking && !video.paused && !video.muted) return;
 
-      const finishIntro = () => {
-        state.introPlayed = true; // ฟังจบรอบหนึ่งแล้ว → อนุญาตข้ามครั้งหน้า
-        state.speaking = false;
-        showAvatarPlay(false);
-        video.classList.remove('speaking');
-        document.getElementById('btnSkip').style.display = 'none';
-        setLandingCTA('ready');
-        if (state.step === 0) goTo(1);
-      };
-
       if (state.muted) {
         state.muted = false;
         document.getElementById('btnMute').textContent = '🔊';
       }
 
-      video.loop = false;
-      video.muted = false;
-      try { video.currentTime = 0; } catch (_) {}
-      video.classList.add('speaking');
-      state.speaking = true;
       // รอบแรก: ซ่อนปุ่มข้าม จนกว่าจะฟังจบ
       document.getElementById('btnSkip').style.display = state.introPlayed ? 'flex' : 'none';
-      video.onended = finishIntro;
       showAvatarPlay(false);
       setLandingCTA('playing');
 
-      const tryPlay = video.play();
-      if (tryPlay && typeof tryPlay.then === 'function') {
-        tryPlay.then(() => {
-          showAvatarPlay(false);
-        }).catch(() => {
-          video.pause();
-          try { video.currentTime = 0; } catch (_) {}
+      playClipOnce(video, {
+        isActive: () => state.step === 0,
+        onPlaying: () => {
+          if (state.step === 0) showAvatarPlay(false);
+        },
+        onPlayFailed: () => {
+          if (state.step !== 0) return;
+          try { video.pause(); } catch (_) {}
+          safeSeek(video, 0);
           video.muted = true;
           video.loop = false;
           video.classList.remove('speaking');
-          state.speaking = false;
           document.getElementById('btnSkip').style.display = 'none';
           showAvatarPlay(true);
           setLandingCTA('ready');
-        });
-      }
+        },
+        onDone: () => {
+          if (state.step !== 0) return;
+          state.introPlayed = true;
+          showAvatarPlay(false);
+          video.classList.remove('speaking');
+          document.getElementById('btnSkip').style.display = 'none';
+          setLandingCTA('ready');
+          goTo(1);
+        }
+      });
     }
 
     function stopSpeak() {
+      // ยกเลิก session เล่นคลิป + ถอด handlers ก่อน pause
+      _playbackGen++;
       document.querySelectorAll('video.avatar').forEach(v => {
+        clearVideoEndHandlers(v);
         try { v.pause(); } catch (_) {}
         v.classList.remove('speaking');
       });
@@ -1567,6 +1779,8 @@
                   poster="avatar.jpg"
                   playsinline
                   webkit-playsinline
+                  x5-playsinline
+                  preload="auto"
                   disablepictureinpicture
                   aria-label="นักวิเคราะห์แผน AI"
                 ></video>
@@ -1594,8 +1808,13 @@
           `;
           const landingVid = document.getElementById('landingAvatar');
           // โชว์เฟรมแรก + Play · เริ่มดูกัน = เล่นวิดีโอ (ยังไม่ข้ามหน้า)
+          clearVideoEndHandlers(landingVid);
           landingVid.pause();
-          try { landingVid.currentTime = 0.1; } catch (_) {}
+          // รอ metadata ก่อน seek — Safari บางเวอร์ชัน ignore seek ถ้ายังไม่พร้อม
+          if (landingVid.readyState >= 1) safeSeek(landingVid, 0.1);
+          else {
+            landingVid.addEventListener('loadedmetadata', () => safeSeek(landingVid, 0.1), { once: true });
+          }
           showAvatarPlay(true);
           setLandingCTA('ready');
           // ถ้าเคยฟังจบแล้ว (ย้อนกลับมา) โชว์ปุ่มข้ามได้
@@ -2215,10 +2434,13 @@
               <div class="final-cta">
                 <div style="font-size:15px; font-weight:700; margin-bottom:6px;">เก็บผลนี้ไว้ดูเอง</div>
                 <p style="font-size:13px; color:var(--text-dim); margin-bottom:14px; line-height:1.5;">
-                  สร้างการ์ดสรุปเป็นรูปสวยๆ · บันทึกหรือแชร์เก็บในเครื่องได้
+                  สร้างการ์ดสรุปเป็นรูป · บันทึกหรือแชร์ได้ทั้ง iPhone และ Android
                 </p>
                 <div id="sharePreviewWrap" style="display:none; margin-bottom:12px;">
-                  <img id="sharePreview" alt="ตัวอย่างการ์ดสรุป" style="width:100%; border-radius:14px; border:1px solid rgba(255,255,255,0.12); display:block;" />
+                  <img id="sharePreview" alt="ตัวอย่างการ์ดสรุป" style="width:100%; border-radius:14px; border:1px solid rgba(255,255,255,0.12); display:block; -webkit-touch-callout:default; touch-action:manipulation;" />
+                  <p style="font-size:12px; color:var(--text-dim); margin-top:8px; line-height:1.45;">
+                    ถ้าบันทึกไม่ลง · <strong style="color:var(--text);">กดค้างที่รูป</strong> แล้วเลือก «บันทึกรูป»
+                  </p>
                 </div>
                 <button class="btn primary w-full" id="saveCardBtn">บันทึกรูปสรุป</button>
                 <button class="btn w-full mt-8" id="shareBtn" style="border-color:var(--speech-border); color:var(--gold);">แชร์รูป / ข้อความ</button>
@@ -2452,9 +2674,35 @@
             ctx.font = '400 22px "Noto Sans Thai", "Sarabun", sans-serif';
             ctx.fillText(d.toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' }), 80, H - 40);
 
-            return new Promise((resolve) => {
-              canvas.toBlob((blob) => resolve({ canvas, blob }), 'image/png');
+            const dataUrlToBlob = (dataUrl) => {
+              const parts = String(dataUrl || '').split(',');
+              const mime = (parts[0].match(/:(.*?);/) || [])[1] || 'image/png';
+              const bin = atob(parts[1] || '');
+              const arr = new Uint8Array(bin.length);
+              for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+              return new Blob([arr], { type: mime });
+            };
+
+            /** canvas → Blob แบบทนทาน (toBlob บาง WebView คืน null) */
+            const canvasToBlob = (canvas) => new Promise((resolve) => {
+              const fallback = () => {
+                try { resolve(dataUrlToBlob(canvas.toDataURL('image/png'))); }
+                catch (_) { resolve(null); }
+              };
+              if (!canvas) return resolve(null);
+              if (typeof canvas.toBlob === 'function') {
+                try {
+                  canvas.toBlob((blob) => {
+                    if (blob && blob.size > 0) resolve(blob);
+                    else fallback();
+                  }, 'image/png');
+                  return;
+                } catch (_) { /* fall through */ }
+              }
+              fallback();
             });
+
+            return canvasToBlob(canvas).then((blob) => ({ canvas, blob }));
           };
 
           const wireSummary = () => {
@@ -2477,18 +2725,170 @@
             };
             const previewWrap = document.getElementById('sharePreviewWrap');
             const preview = document.getElementById('sharePreview');
+            const CARD_FILE = 'life-plan-summary.png';
 
-            const downloadBlob = (blob, name) => {
-              const url = URL.createObjectURL(blob);
-              const aEl = document.createElement('a');
-              aEl.href = url;
-              aEl.download = name;
-              document.body.appendChild(aEl);
-              aEl.click();
-              aEl.remove();
-              setTimeout(() => URL.revokeObjectURL(url), 2000);
+            const isIOS = () => {
+              const ua = navigator.userAgent || '';
+              if (/iPad|iPhone|iPod/i.test(ua)) return true;
+              // iPadOS 13+ รายงานเป็น Mac
+              return navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1;
+            };
+            const isAndroid = () => /Android/i.test(navigator.userAgent || '');
+            const isMobile = () => isIOS() || isAndroid() || /Mobile/i.test(navigator.userAgent || '');
+
+            const showPreview = (canvas, blob) => {
+              if (!preview || !previewWrap) return;
+              try {
+                if (blob) {
+                  const url = URL.createObjectURL(blob);
+                  preview.src = url;
+                  preview.onload = () => setTimeout(() => URL.revokeObjectURL(url), 60000);
+                } else if (canvas) {
+                  preview.src = canvas.toDataURL('image/png');
+                }
+                previewWrap.style.display = 'block';
+                previewWrap.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+              } catch (_) {}
             };
 
+            const makeCardFile = (blob) => {
+              try {
+                return new File([blob], CARD_FILE, { type: 'image/png', lastModified: Date.now() });
+              } catch (_) {
+                // IE/เก่ามาก: File ctor ไม่มี — ใช้ Blob + name ผ่าน share ไม่ได้ แต่ download ได้
+                blob.name = CARD_FILE;
+                return blob;
+              }
+            };
+
+            /** ดาวน์โหลดหลายวิธี — Android / desktop ใช้ได้ดี · iOS มักต้อง share หรือ long-press */
+            const downloadBlob = (blob, name) => {
+              if (!blob) return false;
+              const fileName = name || CARD_FILE;
+              // IE / legacy Edge
+              if (typeof navigator.msSaveOrOpenBlob === 'function') {
+                try {
+                  navigator.msSaveOrOpenBlob(blob, fileName);
+                  return true;
+                } catch (_) {}
+              }
+              // วิธีหลัก: object URL + a[download]
+              try {
+                const url = URL.createObjectURL(blob);
+                const aEl = document.createElement('a');
+                aEl.href = url;
+                aEl.download = fileName;
+                aEl.rel = 'noopener';
+                aEl.style.display = 'none';
+                document.body.appendChild(aEl);
+                aEl.click();
+                aEl.remove();
+                setTimeout(() => URL.revokeObjectURL(url), 4000);
+                return true;
+              } catch (_) {}
+              // WebView บางตัวบล็อก blob: — ลอง data URL
+              try {
+                const reader = new FileReader();
+                reader.onload = () => {
+                  const aEl = document.createElement('a');
+                  aEl.href = reader.result;
+                  aEl.download = fileName;
+                  aEl.rel = 'noopener';
+                  document.body.appendChild(aEl);
+                  aEl.click();
+                  aEl.remove();
+                };
+                reader.readAsDataURL(blob);
+                return true;
+              } catch (_) {}
+              return false;
+            };
+
+            /** เปิดรูปในแท็บใหม่ (iOS Safari: แล้วให้ user กดแชร์/บันทึกรูป) */
+            const openBlobInNewTab = (blob) => {
+              if (!blob) return false;
+              try {
+                const url = URL.createObjectURL(blob);
+                const win = window.open(url, '_blank');
+                if (!win) {
+                  // popup ถูกบล็อก — นำทางในแท็บเดียวกันไม่ดี ใช้ preview แทน
+                  URL.revokeObjectURL(url);
+                  return false;
+                }
+                setTimeout(() => URL.revokeObjectURL(url), 60000);
+                return true;
+              } catch (_) {
+                return false;
+              }
+            };
+
+            const copyText = async (text) => {
+              // 1) Clipboard API (ต้อง secure context)
+              try {
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                  await navigator.clipboard.writeText(text);
+                  return true;
+                }
+              } catch (_) {}
+              // 2) execCommand fallback — ใช้ได้ใน WebView หลายตัว
+              try {
+                const ta = document.createElement('textarea');
+                ta.value = text;
+                ta.setAttribute('readonly', '');
+                ta.style.cssText = 'position:fixed;left:-9999px;top:0;opacity:0;';
+                document.body.appendChild(ta);
+                ta.focus();
+                ta.select();
+                ta.setSelectionRange(0, ta.value.length);
+                const ok = document.execCommand('copy');
+                ta.remove();
+                return !!ok;
+              } catch (_) {
+                return false;
+              }
+            };
+
+            /**
+             * แชร์ไฟล์รูป — ลอง share จริงเสมอ
+             * (canShare บน Android บางรุ่นคืน false ทั้งที่แชร์ได้ · ชื่อไฟล์ไทยก็เคยพัง)
+             * คืน: 'shared' | 'abort' | 'fail'
+             */
+            const shareFiles = async (blob, text) => {
+              if (!blob || typeof navigator.share !== 'function') return 'fail';
+              const file = makeCardFile(blob);
+              const attempts = [
+                { files: [file], title: 'สรุปแผนชีวิตของฉัน', text: text || '' },
+                { files: [file], title: 'สรุปแผนชีวิตของฉัน' },
+                { files: [file] }
+              ];
+              for (const payload of attempts) {
+                try {
+                  await navigator.share(payload);
+                  return 'shared';
+                } catch (e) {
+                  if (e && e.name === 'AbortError') return 'abort';
+                  // ลอง payload ถัดไป
+                }
+              }
+              return 'fail';
+            };
+
+            const shareTextOnly = async (text) => {
+              if (typeof navigator.share !== 'function') return 'fail';
+              try {
+                await navigator.share({ title: 'สรุปแผนชีวิตของฉัน', text });
+                return 'shared';
+              } catch (e) {
+                if (e && e.name === 'AbortError') return 'abort';
+                return 'fail';
+              }
+            };
+
+            /**
+             * บันทึกรูปให้ใช้ได้ทั้ง iOS + Android
+             * - iOS: เปิด Share Sheet (เลือก "บันทึกรูป") ดีที่สุด · fallback โชว์ preview ให้กดค้าง
+             * - Android: download + share sheet ถ้ามี
+             */
             const saveCardBtn = document.getElementById('saveCardBtn');
             if (saveCardBtn) {
               saveCardBtn.onclick = async () => {
@@ -2496,12 +2896,42 @@
                 try {
                   const { canvas, blob } = await makeShareCard();
                   if (!blob) throw new Error('no blob');
-                  if (preview && previewWrap) {
-                    preview.src = canvas.toDataURL('image/png');
-                    previewWrap.style.display = 'block';
+                  showPreview(canvas, blob);
+
+                  // มือถือ: ใช้ Web Share บันทึกรูป (iOS Photos / Android Files)
+                  if (isMobile() && typeof navigator.share === 'function') {
+                    const r = await shareFiles(blob, 'สรุปแผนชีวิตของฉัน');
+                    if (r === 'shared') {
+                      setStatus(isIOS()
+                        ? 'เปิดแชร์แล้ว · เลือก «บันทึกรูป» เพื่อเก็บลงเครื่อง'
+                        : 'เปิดแชร์แล้ว · เลือกบันทึกหรือส่งต่อได้เลย');
+                      return;
+                    }
+                    if (r === 'abort') {
+                      setStatus('ยกเลิกแล้ว · กดค้างที่รูปด้านบนเพื่อบันทึกก็ได้');
+                      return;
+                    }
                   }
-                  downloadBlob(blob, 'สรุปแผนชีวิต.png');
-                  setStatus('บันทึกรูปแล้ว · ดูในโฟลเดอร์ดาวน์โหลดได้เลย');
+
+                  // ดาวน์โหลดตรง (Android Chrome / desktop ใช้ได้ดี)
+                  const dlOk = downloadBlob(blob, CARD_FILE);
+                  if (dlOk && !isIOS()) {
+                    setStatus('บันทึกรูปแล้ว · ดูในโฟลเดอร์ดาวน์โหลดได้เลย');
+                    return;
+                  }
+
+                  // iOS / WebView: a[download] มักไม่ทำงาน — เปิดแท็บรูป + บอก long-press
+                  if (isIOS()) {
+                    const opened = openBlobInNewTab(blob);
+                    setStatus(opened
+                      ? 'เปิดรูปแล้ว · กดปุ่มแชร์ (□↑) แล้วเลือก «บันทึกรูป» หรือกดค้างที่รูปด้านบน'
+                      : 'กดค้างที่รูปด้านบนค้างไว้ · แล้วเลือก «บันทึกรูป»');
+                    return;
+                  }
+
+                  setStatus(dlOk
+                    ? 'บันทึกรูปแล้ว · ถ้าไม่เจอไฟล์ ให้กดค้างที่รูปด้านบน'
+                    : 'กดค้างที่รูปด้านบน · แล้วเลือกบันทึกรูป');
                 } catch (_) {
                   setStatus('สร้างรูปไม่สำเร็จ · ลองแชร์ข้อความแทน', false);
                 }
@@ -2515,30 +2945,43 @@
                 const text = buildShareText();
                 try {
                   const { canvas, blob } = await makeShareCard();
-                  if (preview && previewWrap && canvas) {
-                    preview.src = canvas.toDataURL('image/png');
-                    previewWrap.style.display = 'block';
-                  }
-                  if (blob && navigator.share && navigator.canShare) {
-                    const file = new File([blob], 'สรุปแผนชีวิต.png', { type: 'image/png' });
-                    if (navigator.canShare({ files: [file] })) {
-                      await navigator.share({
-                        files: [file],
-                        title: 'สรุปแผนชีวิตของฉัน',
-                        text
-                      });
+                  if (canvas || blob) showPreview(canvas, blob);
+
+                  // 1) แชร์รูป + ข้อความ (iOS 15+ / Android Chrome)
+                  if (blob) {
+                    const r = await shareFiles(blob, text);
+                    if (r === 'shared') {
                       setStatus('แชร์รูปเรียบร้อยแล้ว');
                       return;
                     }
+                    if (r === 'abort') {
+                      setStatus('');
+                      return;
+                    }
                   }
-                  if (navigator.share) {
-                    await navigator.share({ title: 'สรุปแผนชีวิตของฉัน', text });
-                    setStatus('แชร์ข้อความเรียบร้อยแล้ว');
+
+                  // 2) แชร์ข้อความอย่างเดียว
+                  const t = await shareTextOnly(text);
+                  if (t === 'shared') {
+                    setStatus('แชร์ข้อความเรียบร้อยแล้ว · รูปอยู่ด้านบน กดค้างเพื่อบันทึกได้');
+                    return;
+                  }
+                  if (t === 'abort') {
+                    setStatus('');
+                    return;
+                  }
+
+                  // 3) ไม่มี Web Share (Messenger in-app บางตัว) → ดาวน์โหลด + คัดลอกข้อความ
+                  if (blob) downloadBlob(blob, CARD_FILE);
+                  const copied = await copyText(text);
+                  if (copied) {
+                    setStatus(isIOS()
+                      ? 'คัดลอกข้อความแล้ว · กดค้างที่รูปด้านบนเพื่อบันทึกรูป'
+                      : 'คัดลอกข้อความแล้ว และพยายามบันทึกรูปให้แล้ว');
                     return;
                   }
                   if (blob) {
-                    downloadBlob(blob, 'สรุปแผนชีวิต.png');
-                    setStatus('บันทึกรูปแล้ว · เครื่องนี้ไม่รองรับแชร์ตรง');
+                    setStatus('รูปอยู่ด้านบน · กดค้างเพื่อบันทึก หรือคัดลอกข้อความด้านล่างด้วยตัวเอง');
                     return;
                   }
                 } catch (e) {
@@ -2547,14 +2990,15 @@
                     return;
                   }
                 }
+                // 4) fallback สุดท้าย: คัดลอกข้อความ
                 try {
-                  if (navigator.clipboard && navigator.clipboard.writeText) {
-                    await navigator.clipboard.writeText(text);
-                    setStatus('คัดลอกข้อความสรุปไว้แล้ว · วางในโน้ตได้');
+                  const text = buildShareText();
+                  if (await copyText(text)) {
+                    setStatus('คัดลอกข้อความสรุปไว้แล้ว · วางใน Line/โน้ตได้');
                     return;
                   }
                 } catch (_) {}
-                setStatus('แชร์ไม่สำเร็จ · กดบันทึกรูปแทน', false);
+                setStatus('แชร์ไม่สำเร็จ · กดค้างที่รูปด้านบนเพื่อบันทึก หรือกดบันทึกรูปอีกครั้ง', false);
               };
             }
 
@@ -2595,10 +3039,13 @@
 
     function goTo(n) {
       stopSpeak();
+      state._stepReveal = null;
+      state._stepRevealStep = null;
       state.step = n;
       if (n >= steps.length) n = steps.length - 1;
       hideBottom();
       showZonePlay(false);
+      showAvatarPlay(false);
       content.style.opacity = '0';
       setTimeout(() => {
         steps[n].render();
@@ -2697,7 +3144,16 @@
       const btn = document.getElementById('btnMute');
       btn.textContent = state.muted ? '🔇' : '🔊';
       btn.title = state.muted ? 'เปิดเสียงวิดีโอ' : 'ปิดเสียงวิดีโอ';
-      if (state.muted) stopSpeak();
+      if (state.muted) {
+        stopSpeak();
+        // กดปิดเสียงระหว่างเล่น (ทุกหน้า): คืนปุ่มเล่น กันค้าง "กำลังฟัง..."
+        if (state.step === 0 && !state.introPlayed) {
+          showAvatarPlay(true);
+          setLandingCTA('ready');
+        } else if (state.step > 0 && !state.stepHeard[state.step] && STEP_CLIPS[state.step]) {
+          showZonePlay(true);
+        }
+      }
     };
     document.getElementById('btnSkip').onclick = () => {
       // หน้าแรก: ข้ามได้เฉพาะหลังฟังจบอย่างน้อย 1 รอบ
@@ -2707,18 +3163,50 @@
         goTo(1);
         return;
       }
-      // ขั้นอื่น: ข้ามคลิป (หลังเคยฟังจบแล้ว) → ปลดปุ่มไปต่อ
+      // ขั้น 1–10: ข้ามคลิป (หลังเคยฟังจบแล้ว) → ปลด actions + ปุ่มไปต่อ
       if (STEP_CLIPS[state.step]) {
         if (!state.stepHeard[state.step]) return;
-        state.stepHeard[state.step] = true;
         stopSpeak();
         startSilentLoop(document.getElementById('avatar'));
-        btnNext.disabled = false;
-        btnNext.classList.remove('waiting');
+        if (
+          typeof state._stepReveal === 'function' &&
+          state._stepRevealStep === state.step
+        ) {
+          state._stepReveal();
+        } else {
+          state.stepHeard[state.step] = true;
+          setStepActionsVisible(true);
+          btnNext.disabled = false;
+          btnNext.classList.remove('waiting');
+        }
         return;
       }
       stopSpeak();
     };
+
+    // บาง WebView (Messenger) pause คลิปเมื่อสลับแอป — กลับมาแล้วถ้าใกล้จบให้ปลดล็อก
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) return;
+      const step = state.step;
+      if (step === 0) {
+        const v = document.getElementById('landingAvatar');
+        if (v && state.speaking && isVideoNearEnd(v)) {
+          // bindVideoEnd จะจับเองผ่าน poll/pause — แค่ nudge play ถ้าค้างกลางคลิป
+          return;
+        }
+      }
+      if (STEP_CLIPS[step] && state.speaking) {
+        const av = document.getElementById('avatar');
+        if (av && isVideoNearEnd(av)) {
+          // poll ใน bindVideoEnd จะเรียก onDone — ไม่ต้องทำซ้ำ
+          return;
+        }
+        // ถ้ายังไม่จบ แต่ถูก pause เพราะ background → เล่นต่อ
+        if (av && av.paused && !av.ended && !state.muted && state.speaking) {
+          av.play().catch(() => showZonePlay(true));
+        }
+      }
+    });
 
     // DEV bar
     if (DEV_MODE) {
